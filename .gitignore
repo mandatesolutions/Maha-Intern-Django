@@ -1,0 +1,49 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Django migrations
+*/migrations/*.py
+*/migrations/*.pyc
+
+# Media files
+media/
+
+# Environment variables
+.env
+*.env
+
+# VS Code settings
+.vscode/
+
+# IDE-specific files
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Python virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# Local configurations
+local_settings.py
+
+# Database
+db.sqlite3
+
+# Cache
+*.log
+*.pot
+*.pyc
+
+# Coverage reports
+coverage/
+*.cover
+
+# Other
+*.DS_Store
+*.egg-info/
+dist/
+build/
