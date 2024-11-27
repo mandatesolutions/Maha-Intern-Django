@@ -24,7 +24,6 @@ class UserModel(AbstractUser):
         ("Student", "Student"),
         ("Organization", "Organization"),
     )
-
     
     email = models.EmailField(unique=True)  # Ensure the email is unique
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, blank=True, null=True)
@@ -32,7 +31,7 @@ class UserModel(AbstractUser):
     
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name'] 
+    REQUIRED_FIELDS = [] 
 
     objects = CustomUserManager()
 

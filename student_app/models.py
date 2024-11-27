@@ -5,7 +5,6 @@ from django.db import models
 
 
 class Student(models.Model):
-    
     GENDER_CHOICES = (
         ("Male", "Male"),
         ("Female", "Female"),
