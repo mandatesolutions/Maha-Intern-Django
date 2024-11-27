@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import *
 from core_app.models import *
+from organization_app.models import *
 
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,4 +22,9 @@ class UserModelSerializer(serializers.ModelSerializer):
         user = UserModel.objects.create_user(**validated_data)
         Student.objects.create(user=user, **student_data)
         return user
-    
+
+
+class InternshipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Internship
+        fields = "__all__"

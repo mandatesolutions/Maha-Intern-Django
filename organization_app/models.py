@@ -1,5 +1,6 @@
 from django.db import models
 from core_app.models import UserModel
+import uuid
 
 # # Create your models here.
 
@@ -43,6 +44,7 @@ class Internship(models.Model):
         ("Unpaid","Unpaid"),
     )
 
+    intern_id = models.CharField(max_length=100, unique=True, editable=False)
     intern_type = models.CharField(max_length=55,null=True,blank=True,choices=intern_type_choices)
     company = models.ForeignKey('organization_app.Organization', on_delete=models.CASCADE, related_name='company_internships',null=True,blank=True)  # Company is a User
     title = models.CharField(max_length=100,null=True)
@@ -68,6 +70,11 @@ class Internship(models.Model):
     
     def __str__(self):
         return self.title
+    
+    def save(self, *args, **kwargs):
+        if not self.intern_id:
+            self.intern_id = str(uuid.uuid4()).replace('-', '')
+        super().save(*args, **kwargs)
     
 # Application model (students applying for internships)
 class Application(models.Model):

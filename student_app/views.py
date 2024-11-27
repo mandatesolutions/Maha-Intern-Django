@@ -6,11 +6,14 @@ from django.http import Http404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import BasePermission
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.exceptions import NotFound
 from drf_yasg.utils import swagger_auto_schema
 from .models import *
 from core_app.models import *
 from core_app.serializers import *
+from organization_app.models import *
 from .serializers import *
+
 
 # Create your views here.
 
@@ -53,3 +56,19 @@ class Student_ProfileDetail(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class Student_InternshipDetail(APIView):
+    serializer_class = InternshipSerializer
+    
+    def get_object(self, uid):
+        try:
+            return Internship.objects.get(intern_id=uid)
+        except Internship.DoesNotExist:
+            raise NotFound("Scholarship not found.")
+
+    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get Internship by uid", operation_summary="Get Internship by id")
+    def get(self, request, uid, format=None):
+        internship = self.get_object(uid)
+        serializer = self.serializer_class(internship)
+        return Response(serializer.data, status=status.HTTP_200_OK)
