@@ -41,6 +41,7 @@ urlpatterns = [
     path('api/config/', include('core_app.urls')),
     path('api/student/', include('student_app.urls')),
     
+    path('api/organization/', include('organization_app.urls')),
     path('token/refresh/', jwt_views.TokenRefreshView.as_view(), name ='token_refresh'), 
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger-ui'),
 ]
