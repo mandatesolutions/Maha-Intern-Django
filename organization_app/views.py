@@ -75,7 +75,7 @@ class UpdateIntern(APIView):
             return Response({"detail": "Internship not found."}, status=status.HTTP_404_NOT_FOUND)
         
         # Pass the object to the serializer to update it
-        serializer = self.serializer_class(data=intern_data, instance=intern_obj)
+        serializer = self.serializers_classes(data=intern_data, instance=intern_obj)
         
         if serializer.is_valid():
             serializer.save()  # Save the updated data
@@ -88,6 +88,7 @@ class GetInternData(APIView):
     permission_classes=[IsAuthenticated]
     serializer_classes = InternshipSerializers
 
+    @swagger_auto_schema(tags=['Organization APIs'],operation_description="One Internship data show organization",operation_summary="One Internship data show organization")
     def get(self,request,intern_id):
         try:
             # Get the existing Internship object by intern_id
@@ -96,7 +97,7 @@ class GetInternData(APIView):
             return Response({"detail": "Internship not found."}, status=status.HTTP_404_NOT_FOUND)
         
         # Pass the object to the serializer to update it
-        serializer = self.serializer_class(intern_obj)
+        serializer = self.serializer_classes(intern_obj)
         return Response(serializer.data, status=status.HTTP_200_OK)  # Return the updated data
     
 
@@ -105,12 +106,48 @@ class ShowInternship(APIView):
     permission_classes=[IsAuthenticated]
     serializer_classes = InternshipSerializers
 
-    def get(self,request):
-        intern_queryset = Internship.objects.all()
+
+    @swagger_auto_schema(tags=['Organization APIs'],operation_description="All Internships data show organization",operation_summary="All Internships data show organization")
+    def get(self,request,organ_id):
+        intern_queryset = Internship.objects.filter(company_id=organ_id)
         # Pass the  queryset to the serializer to update it
-        serializer = self.serializer_class(intern_queryset,many=True)
+        serializer = self.serializer_classes(intern_queryset,many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)  # Return the updated data
+
+
+
+
+class DeleteIntern(APIView):
+    permission_classes=[IsAuthenticated]
+    serializer_classes = InternshipSerializers
+
+    @swagger_auto_schema(tags=['Organization APIs'],operation_description="Delete Internships data show organization",operation_summary="Delete Internships data")
+    
+    def delete(self,request,intern_id):
+        try:
+            # Get the existing Internship object by intern_id
+            intern_obj = Internship.objects.get(id=intern_id)
+        except Internship.DoesNotExist:
+            return Response({"detail": "Internship id not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        intern_obj.delete()
+        return Response({"success": "Internship deleted successfully."}, status=status.HTTP_200_OK)  # Return the updated data
+    
+
+class OrganizationAllApps(APIView):
+    permission_classes=[IsAuthenticated]
+    serializer_classes = ApplicationSerializer
+
+
+    @swagger_auto_schema(tags=['Organization APIs'],operation_description="All Internships data show organization",operation_summary="All Internships data show organization")
+    def get(self,request,intern_id):
+        apps_data = Application.objects.filter(internship_id=intern_id)
+        # Pass the  queryset to the serializer to update it
+        serializer = self.serializer_classes(apps_data,many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)  # Return the updated data
     
+
+
 
 
 

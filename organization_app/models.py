@@ -54,7 +54,7 @@ class Internship(models.Model):
     location = models.CharField(max_length=100,blank=True,null=True)
     duration = models.IntegerField(null=True,blank=True)  # duration in month
     skills_required = models.TextField(null=True,blank=True)
-    contact_email = models.EmailField(null=True, blank=True)
+    contact_email = models.EmailField(null=True,blank=True)  
     contact_mobile = models.CharField(max_length=15, blank=True, null=True)
     start_date = models.DateField(null=True,blank=True)
     last_date_of_apply = models.DateField(null=True,blank=True)
