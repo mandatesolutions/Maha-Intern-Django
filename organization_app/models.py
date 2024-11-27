@@ -44,7 +44,7 @@ class Internship(models.Model):
         ("Unpaid","Unpaid"),
     )
 
-    intern_id = models.CharField(max_length=100, unique=True, editable=False)
+    intern_id = models.CharField(max_length=100, unique=True,editable=False,null=True,blank=True)
     intern_type = models.CharField(max_length=55,null=True,blank=True,choices=intern_type_choices)
     company = models.ForeignKey('organization_app.Organization', on_delete=models.CASCADE, related_name='company_internships',null=True,blank=True)  # Company is a User
     title = models.CharField(max_length=100,null=True)
