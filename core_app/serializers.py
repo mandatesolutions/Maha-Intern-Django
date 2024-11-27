@@ -10,6 +10,11 @@ class UserSerialiazer(serializers.ModelSerializer):
         model = UserModel
         fields = ['email','password','first_name','last_name','mobile','role']
 
+    def create(self, validated_data):
+        user = UserModel.objects.create_user(**validated_data)
+        return user
+
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
