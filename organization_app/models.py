@@ -4,9 +4,16 @@ from core_app.models import UserModel
 # # Create your models here.
 
 class Organization(models.Model):
+    industry_type_choices= (
+        ("Public Sectors","Public Sectors"),
+        ("Private Sectors","Private Sectors"),
+        ("Government Organizations","Government Organizations"),
+        ("Non-Governmental Organizations","Non-Governmental Organizations"),
+        ("Corporate Sectors","Corporate Sectors")
+    )
     user = models.OneToOneField('core_app.Usermodel', on_delete=models.CASCADE)
     company_name = models.CharField(max_length=512,blank=True,null=True)
-    industry_type = models.CharField(max_length=255,null=True,blank=True)
+    industry_type = models.CharField(max_length=255,null=True,blank=True,choices=industry_type_choices)
     company_id_type = models.CharField(max_length=50,null=True,blank=True)
     company_unique_id = models.CharField(max_length=100,null=True,blank=True)
     reprsentative_name = models.CharField(max_length=255,null=True,blank=True)
@@ -67,6 +74,7 @@ class Application(models.Model):
     student = models.ForeignKey('core_app.Usermodel', on_delete=models.CASCADE, related_name='applications')  # Student is a User
     internship = models.ForeignKey('organization_app.Organization', on_delete=models.CASCADE,null=True,blank=True)
     applied_on = models.DateTimeField(auto_now_add=True)
+    resume = models.FileField(upload_to='apps_resumes/',null=True,blank=True)
     status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('shortlisted', 'Shortlisted'), ('rejected', 'Rejected')], default='pending')
     
     def __str__(self):
