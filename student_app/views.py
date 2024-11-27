@@ -72,3 +72,33 @@ class Student_InternshipDetail(APIView):
         internship = self.get_object(uid)
         serializer = self.serializer_class(internship)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class Student_Internshipapply(APIView):
+    permission_classes = [IsAuthenticated, IsStudent]
+    serializer_class = ApplicationSerializer
+    
+    parser_classes = (MultiPartParser, FormParser)
+    @swagger_auto_schema(tags=['Student APIs'], request_body=serializer_class, operation_description="Api of Apply for Scholarship", operation_summary="Apply for Scholarship")
+    def post(self, request, format=None):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            # Set the student to the logged-in user
+            # serializer.validated_data['student'] = request.user
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class Student_Applications(APIView):
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get all applications of student", operation_summary="Get all applications of student")
+    def get(self, request, *args, **kwargs):
+        applications = Application.objects.filter(student=request.user)
+
+        if not applications:
+            return Response({"message": "No applications found for this user."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ApplicationSerializer(applications, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

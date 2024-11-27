@@ -44,7 +44,7 @@ class Internship(models.Model):
         ("Unpaid","Unpaid"),
     )
 
-    intern_id = models.CharField(max_length=100, unique=True,editable=False,null=True,blank=True)
+    intern_id = models.CharField(max_length=100, unique=True, editable=False, null=True)
     intern_type = models.CharField(max_length=55,null=True,blank=True,choices=intern_type_choices)
     company = models.ForeignKey('organization_app.Organization', on_delete=models.CASCADE, related_name='company_internships',null=True,blank=True)  # Company is a User
     title = models.CharField(max_length=100,null=True)
@@ -54,7 +54,7 @@ class Internship(models.Model):
     location = models.CharField(max_length=100,blank=True,null=True)
     duration = models.IntegerField(null=True,blank=True)  # duration in month
     skills_required = models.TextField(null=True,blank=True)
-    contact_email = models.EmailField(unique=True)  # Ensure the email is unique
+    contact_email = models.EmailField(null=True, blank=True)
     contact_mobile = models.CharField(max_length=15, blank=True, null=True)
     start_date = models.DateField(null=True,blank=True)
     last_date_of_apply = models.DateField(null=True,blank=True)
@@ -79,7 +79,7 @@ class Internship(models.Model):
 # Application model (students applying for internships)
 class Application(models.Model):
     student = models.ForeignKey('core_app.Usermodel', on_delete=models.CASCADE, related_name='applications')  # Student is a User
-    internship = models.ForeignKey('organization_app.Organization', on_delete=models.CASCADE,null=True,blank=True)
+    internship = models.ForeignKey('organization_app.Internship', on_delete=models.CASCADE,null=True,blank=True)
     applied_on = models.DateTimeField(auto_now_add=True)
     resume = models.FileField(upload_to='apps_resumes/',null=True,blank=True)
     status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('shortlisted', 'Shortlisted'), ('rejected', 'Rejected')], default='pending')
