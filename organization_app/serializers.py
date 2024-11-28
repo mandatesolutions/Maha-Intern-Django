@@ -7,6 +7,11 @@ class OrganizationSerializers(serializers.ModelSerializer):
         model = Organization
         fields = ["company_name","industry_type","company_id_type","company_unique_id","reprsentative_name","district",
                   "taluka","organization_logo"]
+        
+class AllOrganizationSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Organization
+        fields = '__all__'
 
 
 class OrgUserModelSerializer(serializers.ModelSerializer):
