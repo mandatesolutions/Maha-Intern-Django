@@ -79,17 +79,22 @@ class Internship(models.Model):
     
 # Application model (students applying for internships)
 class Application(models.Model):
+    app_id = models.CharField(max_length=100, unique=True, editable=False, null=True)
     student = models.ForeignKey('student_app.Student', on_delete=models.CASCADE, related_name='student_applications')  # Student is a User
     internship = models.ForeignKey('organization_app.Internship', on_delete=models.CASCADE,null=True,blank=True)
     applied_on = models.DateTimeField(auto_now_add=True)
     resume = models.FileField(upload_to='apps_resumes/',null=True,blank=True)
-    status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('shortlisted', 'Shortlisted'), ('rejected', 'Rejected')], default='pending')
+    status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Shortlisted', 'Shortlisted'), ('Selected', 'Selected'), ('Rejected', 'Rejected')], default='Pending')
     
     def __str__(self):
-        return f"{self.student.username} applied for {self.internship.title}"
+        return f"{self.student.adhar_number} applied for {self.internship.title}"
     
     class Meta:
         app_label = 'organization_app'
         db_table = 'Application'
     
+    def save(self, *args, **kwargs):
+        if not self.app_id:
+            self.app_id = str(uuid.uuid4()).replace('-', '')
+        super().save(*args, **kwargs)
 
