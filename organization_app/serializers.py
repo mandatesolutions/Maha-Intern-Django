@@ -34,3 +34,9 @@ class ApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Application
         fields = "__all__"
+
+
+class AppUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Application
+        fields = ['student','internship','status']

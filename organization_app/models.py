@@ -51,6 +51,7 @@ class Internship(models.Model):
     description = models.TextField(null=True,blank=True)
     no_of_openings = models.IntegerField(null=True,blank=True)
     stipend_type = models.CharField(max_length=55,null=True,blank=True,choices=stipend_type_choices)
+    stipend_amount = models.FloatField(blank=True,null=True,default=0)
     location = models.CharField(max_length=100,blank=True,null=True)
     duration = models.IntegerField(null=True,blank=True)  # duration in month
     skills_required = models.TextField(null=True,blank=True)
@@ -78,7 +79,7 @@ class Internship(models.Model):
     
 # Application model (students applying for internships)
 class Application(models.Model):
-    student = models.ForeignKey('core_app.Usermodel', on_delete=models.CASCADE, related_name='applications')  # Student is a User
+    student = models.ForeignKey('student_app.Student', on_delete=models.CASCADE, related_name='student_applications')  # Student is a User
     internship = models.ForeignKey('organization_app.Internship', on_delete=models.CASCADE,null=True,blank=True)
     applied_on = models.DateTimeField(auto_now_add=True)
     resume = models.FileField(upload_to='apps_resumes/',null=True,blank=True)

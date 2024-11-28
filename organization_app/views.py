@@ -7,6 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 
 from .serializers import *
+from student_app.serializers import UserModelSerializer
+from student_app.models import Student
 # Create your views here.
 
 class RegisterOrganization(APIView):
@@ -145,6 +147,52 @@ class OrganizationAllApps(APIView):
         # Pass the  queryset to the serializer to update it
         serializer = self.serializer_classes(apps_data,many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)  # Return the updated data
+    
+
+class UpdateAppsStatus(APIView):
+    permission_classes=[IsAuthenticated]
+    serializer_classes = AppUpdateSerializer
+
+    @swagger_auto_schema(tags=['Organization APIs'],operation_description="update status for application by organization",operation_summary="update status for application by organization"
+                         ,request_body=serializer_classes)
+    
+    def put(self,request):
+        intern_id = request.data.get('internship')
+        student_id = request.data.get('student')
+    
+        try:
+            app_data = Application.objects.get(internship_id=intern_id, student_id=student_id)
+        except Application.DoesNotExist:
+            return Response({"detail": "Application not found."}, status=status.HTTP_404_NOT_FOUND)
+
+   
+        serializer = self.serializer_classes(app_data, data=request.data, partial=True)  # partial=True allows partial updates
+    
+        if serializer.is_valid():
+            serializer.save()  # Save the updated data
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class GetStudentProfile(APIView):
+    serializer_class = UserModelSerializer
+    # permission_classes=[IsAuthenticated]
+
+    @swagger_auto_schema(tags=['Organization APIs'], operation_description="for Get profile of student", operation_summary="for Get profile of student")
+    def get(self, request, student_id):
+        try:
+            # Fetch the Student object by ID
+            stud_obj = Student.objects.get(id=student_id)
+            print("student_obj",stud_obj)
+            # Serialize the Student object (which includes the nested User data)
+            serializer = self.serializer_class(stud_obj.user)
+            
+            # Return the serialized data as response
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        except Student.DoesNotExist:
+            return Response({"detail": "Student not found."}, status=status.HTTP_404_NOT_FOUND)
     
 
 
