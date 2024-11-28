@@ -13,7 +13,7 @@ from core_app.models import *
 from core_app.serializers import *
 from organization_app.models import *
 from .serializers import *
-from organization_app.serializers import AllOrganizationSerializers,InternshipSerializers
+from organization_app.serializers import InternshipSerializers
 
 
 # Create your views here.
