@@ -39,4 +39,4 @@ class ApplicationSerializer(serializers.ModelSerializer):
 class AppUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Application
-        fields = ['student','internship','status']
+        fields = ['student','internship','status'] # unique id need to pass 

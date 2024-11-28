@@ -87,7 +87,7 @@ class Application(models.Model):
     status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Shortlisted', 'Shortlisted'), ('Selected', 'Selected'), ('Rejected', 'Rejected')], default='Pending')
     
     def __str__(self):
-        return f"{self.student.adhar_number} applied for {self.internship.title}"
+        return f"{self.internship.title}"
     
     class Meta:
         app_label = 'organization_app'

@@ -177,7 +177,7 @@ class UpdateAppsStatus(APIView):
 
 class GetStudentProfile(APIView):
     serializer_class = UserModelSerializer
-    # permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated]
 
     @swagger_auto_schema(tags=['Organization APIs'], operation_description="for Get profile of student", operation_summary="for Get profile of student")
     def get(self, request, student_id):
@@ -193,7 +193,30 @@ class GetStudentProfile(APIView):
         
         except Student.DoesNotExist:
             return Response({"detail": "Student not found."}, status=status.HTTP_404_NOT_FOUND)
-    
+        
+
+class OrgDashCounter(APIView):
+    serializer_class = UserModelSerializer
+    # permission_classes=[IsAuthenticated] 
+
+    @swagger_auto_schema(tags=['Organization APIs'], operation_description="for Get organization counter", operation_summary="for Get organization counter")
+    def get(self, request):
+        all_interns=Internship.objects.filter(company__user=request.user)
+        intern_apps = Application.objects.filter(internship__company__user=request.user)
+        org_app_total = intern_apps.count()
+        Pending_app=intern_apps.filter(status='Pending').count()
+        Selected_app=intern_apps.filter(status='Selected').count()
+        Shortlisted_app=intern_apps.filter(status='Shortlisted').count()
+        Rejected_app=intern_apps.filter(status='Rejected').count()
+        
+
+        response_data= {"org_app_total":org_app_total,"Pending_app":Pending_app,"Selected_app":Selected_app,"Shortlisted_app":Shortlisted_app
+                        ,"Rejected_app":Rejected_app}
+        
+        return Response(response_data,status=status.HTTP_200_OK)
+
+
+
 
 
 
