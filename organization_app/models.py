@@ -12,6 +12,8 @@ class Organization(models.Model):
         ("Non-Governmental Organizations","Non-Governmental Organizations"),
         ("Corporate Sectors","Corporate Sectors")
     )
+    
+    org_id = models.CharField(max_length=100, unique=True, editable=False, null=True)
     user = models.OneToOneField('core_app.Usermodel', on_delete=models.CASCADE)
     company_name = models.CharField(max_length=512,blank=True,null=True)
     industry_type = models.CharField(max_length=255,null=True,blank=True,choices=industry_type_choices)
@@ -29,6 +31,11 @@ class Organization(models.Model):
 
     def __str__(self):
         return self.company_name
+    
+    def save(self, *args, **kwargs):
+        if not self.org_id:
+            self.org_id = str(uuid.uuid4()).replace('-', '')
+        super().save(*args, **kwargs)
     
 
 # Internship model

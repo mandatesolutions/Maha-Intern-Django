@@ -1,5 +1,5 @@
 from django.db import models
-
+import uuid
 # Create your models here.
 
 
@@ -9,7 +9,8 @@ class Student(models.Model):
         ("Male", "Male"),
         ("Female", "Female"),
     )
-   
+    
+    stud_id = models.CharField(max_length=100, unique=True, editable=False, null=True)
     user = models.OneToOneField('core_app.Usermodel', on_delete=models.CASCADE)
     adhar_number = models.CharField(null=True,blank=True,max_length=12)
     district = models.CharField(max_length=155, null=True, blank=True)
@@ -21,6 +22,8 @@ class Student(models.Model):
 
     class Meta:
         db_table = 'Student'
-
-
-    
+        
+    def save(self, *args, **kwargs):
+        if not self.stud_id:
+            self.stud_id = str(uuid.uuid4()).replace('-', '')
+        super().save(*args, **kwargs)   
