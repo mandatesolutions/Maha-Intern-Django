@@ -216,9 +216,25 @@ class OrgDashCounter(APIView):
         return Response(response_data,status=status.HTTP_200_OK)
 
 
+class Add_MonthReport(APIView):
+    permission_classes=[IsAuthenticated]
+    serializer_class = MonthlyReportSerializer
 
-
-
-
+    @swagger_auto_schema(tags=['Organization APIs'], request_body=serializer_class, operation_description="API for Adding Month Report to selected student", operation_summary="Add Month Report to Selected Student")
+    def post(self, request):
+        try:
+            app_obj = Application.objects.get(id=request.data.get('application'))
+        except Application.DoesNotExist:
+            return Response({"detail": "Application not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if app_obj.status == 'Selected':
+            serializer = self.serializer_class(data = request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        else:
+            return Response({"detail": "Application not selected."}, status=status.HTTP_400_BAD_REQUEST)
 
 

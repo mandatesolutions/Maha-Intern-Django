@@ -42,12 +42,13 @@ class Student_Dashboard(APIView):
     
     @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Student Dashboard", operation_summary="Student Dashboard")
     def get(self, request, *args, **kwargs):
-        applied = Application.objects.filter(student__user=request.user).count()
-        shortlisted = Application.objects.filter(student__user=request.user, status='Shortlisted').count()
-        selected = Application.objects.filter(student__user=request.user, status='Selected').count()
-        rejected = Application.objects.filter(student__user=request.user, status='Rejected').count()
+        applied = Application.objects.filter(student__user=request.user)
+        appliedcount = applied.count()
+        shortlisted = applied.filter(status='Shortlisted').count()
+        selected = applied.filter(status='Selected').count()
+        rejected = applied.filter(status='Rejected').count()
         
-        return Response({'applied': applied, 'shortlisted': shortlisted, 'selected': selected, 'rejected': rejected,}, status=status.HTTP_200_OK)
+        return Response({'appliedcount': appliedcount, 'shortlisted': shortlisted, 'selected': selected, 'rejected': rejected,}, status=status.HTTP_200_OK)
     
     
 class Student_ProfileDetail(APIView):

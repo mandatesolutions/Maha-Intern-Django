@@ -22,8 +22,7 @@ urlpatterns = [
 
     path('get_student_profile/<int:student_id>',views.GetStudentProfile.as_view(), name='get_student_profile'),
 
-    path('org-dash-counter',views.OrgDashCounter.as_view(), name='org-dash-counter')
+    path('org-dash-counter',views.OrgDashCounter.as_view(), name='org-dash-counter'),
 
-
-        
+    path('add-monthreport', views.Add_MonthReport.as_view(), name='add-monthreport'),
 ]

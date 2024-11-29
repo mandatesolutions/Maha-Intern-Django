@@ -41,3 +41,9 @@ class AppUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Application
         fields = ['student','internship','status'] # unique id need to pass 
+        
+
+class MonthlyReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MonthlyReport
+        fields = "__all__"

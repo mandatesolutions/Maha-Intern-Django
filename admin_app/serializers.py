@@ -3,6 +3,7 @@ from core_app.models import *
 from student_app.models import *
 from organization_app.models import *
 
+
 class UserstudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserModel
@@ -14,6 +15,7 @@ class Allstudent_Serializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = ['id', 'user', 'adhar_number', 'district', 'taluka', 'dob', 'gender', 'last_course', 'university']
+
 
 class AllOrganizationSerializers(serializers.ModelSerializer):
     user = UserstudentSerializer()

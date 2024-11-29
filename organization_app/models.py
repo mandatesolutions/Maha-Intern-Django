@@ -105,3 +105,25 @@ class Application(models.Model):
             self.app_id = str(uuid.uuid4()).replace('-', '')
         super().save(*args, **kwargs)
 
+
+class MonthlyReport(models.Model):
+    report_id = models.CharField(max_length=50, unique=True, editable=False, null=True)
+    application = models.ForeignKey('organization_app.Application', on_delete=models.CASCADE, related_name='monthly_reports')
+    month = models.CharField(max_length=50)  # This could be month
+    year = models.IntegerField()  # To capture the year
+    report_content = models.TextField(null=True, blank=True)  # The content of the report
+    feedback = models.TextField(null=True, blank=True)  # Feedback from the company/organization
+    report_file = models.FileField(upload_to='monthly_reports/', null=True, blank=True)
+    reported_on = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        app_label = 'organization_app'
+        db_table = 'MonthlyReport'
+    
+    def __str__(self):
+        return f"Report for {self.report_id}"
+
+    def save(self, *args, **kwargs):
+        if not self.report_id:
+            self.report_id = str(uuid.uuid4()).replace('-', '')
+        super().save(*args, **kwargs)
