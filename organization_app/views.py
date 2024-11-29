@@ -240,3 +240,12 @@ class Add_MonthReport(APIView):
             return Response({"detail": "Application not selected."}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class MonthReportby_student(APIView):
+    permission_classes=[IsAuthenticated]
+    serializer_class = MonthlyReportSerializer
+
+    @swagger_auto_schema(tags=['Organization APIs'], operation_description="API for Get Report by Student", operation_summary="Get Report By Student")
+    def get(self, request, stud_id, *args, **kwargs):
+        reports = MonthlyReport.objects.filter(application__student__stud_id = stud_id)
+        serializer = self.serializer_class(reports, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

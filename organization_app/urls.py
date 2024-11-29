@@ -25,4 +25,5 @@ urlpatterns = [
     path('org-dash-counter',views.OrgDashCounter.as_view(), name='org-dash-counter'),
 
     path('add-monthreport', views.Add_MonthReport.as_view(), name='add-monthreport'),
+    path('monthreports/<str:stud_id>', views.MonthReportby_student.as_view(), name='monthreports-bystudent'),
 ]
