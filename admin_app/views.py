@@ -88,6 +88,7 @@ class AdminDashboardCounter(APIView):
 
     @swagger_auto_schema(tags=['Admin APIs'],operation_description="show applications and Internships counter",operation_summary="show applications and Internships counter")
     def get(self,request):
+        organ_data = Organization.objects.all()
         all_interns=Internship.objects.all()
         intern_apps = Application.objects.all()
         org_app_total = intern_apps.count()
@@ -97,7 +98,7 @@ class AdminDashboardCounter(APIView):
         Rejected_app=intern_apps.filter(status='Rejected').count()
         
 
-        response_data= {"All_internship":all_interns.count(),"Org_apps_total":org_app_total,"Pending_app":Pending_app,"Selected_app":Selected_app,"Shortlisted_app":Shortlisted_app
+        response_data= {"All_Organization":organ_data.count(),"All_internship":all_interns.count(),"Organization_apps_total":org_app_total,"Pending_app":Pending_app,"Selected_app":Selected_app,"Shortlisted_app":Shortlisted_app
                         ,"Rejected_app":Rejected_app}
         
         return Response(response_data,status=status.HTTP_200_OK)
@@ -118,7 +119,7 @@ class GetStudentInfo(APIView):
     
 class GetOrganInfo(APIView):
     serializer_classes = AllOrganizationSerializers
-    # permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated]
 
     @swagger_auto_schema(tags=['Admin APIs'],operation_description="show organization info for application",operation_summary="show organization info for application")
     def get(self,request,organ_id):
@@ -129,6 +130,22 @@ class GetOrganInfo(APIView):
         
         serializer = self.serializer_classes(organ_data)
         return Response(serializer.data,status=status.HTTP_200_OK)
+    
+class GetStudentReport(APIView):
+    serializer_classes = MonthlyReportSerializer
+    permission_classes=[IsAuthenticated]
+
+    @swagger_auto_schema(tags=['Admin APIs'],operation_description="show organization info for application",operation_summary="show organization info for application")
+    def get(self,request,student_id):
+        try:
+            report_data = MonthlyReport.objects.filter(application__student__stud_id = student_id)
+        except MonthlyReport.DoesNotExist:
+            return Response({"error":"student id not found"})
+       
+        serializer = self.serializer_classes(report_data,many=True)
+        return Response(serializer.data,status=status.HTTP_200_OK)
+    
+
 
 
 

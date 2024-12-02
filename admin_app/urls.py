@@ -12,6 +12,9 @@ urlpatterns = [
 
     # dashboard counter
     path('admin-dashboard-counter', views.AdminDashboardCounter.as_view(), name='admin-dashboard-counter'),
+    path('get-student-report/<str:student_id>',views.GetStudentReport.as_view(), name='get-student-report'),
+
+
 
 
 
