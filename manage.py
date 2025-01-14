@@ -3,10 +3,18 @@
 import os
 import sys
 
+from dotenv import load_dotenv
+load_dotenv() 
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Maha_Intern.settings')
+    # os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Maha_Intern.settings')
+    
+    if os.getenv('DJANGO_ENV') == 'production':
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Maha_Intern.settings.production')
+    else:
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Maha_Intern.settings.local')
+        
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

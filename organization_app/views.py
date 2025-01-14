@@ -119,7 +119,6 @@ class ShowInternship(APIView):
 
 
 
-
 class DeleteIntern(APIView):
     permission_classes=[IsAuthenticated]
     serializer_classes = InternshipSerializers
