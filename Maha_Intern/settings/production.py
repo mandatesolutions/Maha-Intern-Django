@@ -24,9 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY = 'django-insecure-adu4#r&(!h*$j4b(y$!3b2te8pcd5+h+1w7i$84xa4=hu4x$#k'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['backene.internship.mahasocial.com', 'www.backene.internship.mahasocial.com']
 
 
 # Application definition
