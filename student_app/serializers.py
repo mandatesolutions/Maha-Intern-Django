@@ -10,7 +10,7 @@ class StudentSerializer(serializers.ModelSerializer):
 
 
 class UserModelSerializer(serializers.ModelSerializer):
-    student = StudentSerializer()
+    student = StudentSerializer(read_only=True)
 
     class Meta:
         model = UserModel
