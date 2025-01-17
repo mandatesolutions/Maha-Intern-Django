@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission
 
 from drf_yasg.utils import swagger_auto_schema
 
@@ -26,8 +27,13 @@ class RegisterOrganization(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class IsOrg(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == "Organization"
+
+
 class GetOrgProfile(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOrg]
     serializers_classes = OrgUserModelSerializer
 
     @swagger_auto_schema(tags=['Organization APIs'],operation_description="get organization data to profile",operation_summary="get organization data to profile"
@@ -40,7 +46,7 @@ class GetOrgProfile(APIView):
 
 
 class AddIntern(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOrg]
     serializers_classes = InternshipSerializers
 
     @swagger_auto_schema(tags=['Organization APIs'],operation_description="Add Internship to display Students",operation_summary="Add Internship to display Students",
@@ -50,6 +56,7 @@ class AddIntern(APIView):
     def post(self,request):
         if request.method=='POST':
             data=request.data
+            data['company'] = request.user.id
             serialziser=self.serializers_classes(data=data)
             if serialziser.is_valid():
                 serialziser.save()
@@ -59,7 +66,7 @@ class AddIntern(APIView):
             
 
 class UpdateIntern(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOrg]
     serializers_classes = InternshipSerializers
 
 

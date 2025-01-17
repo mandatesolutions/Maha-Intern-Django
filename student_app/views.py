@@ -13,6 +13,7 @@ from core_app.models import *
 from core_app.serializers import *
 from organization_app.models import *
 from .serializers import *
+from organization_app.serializers import *
 
 
 # Create your views here.
@@ -35,6 +36,16 @@ class Student_Registration(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class Student_GetInternships(APIView):
+    serializer_class = InternshipSerializers
+
+    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get 10 Internships", operation_summary="Get Get 10 Internships")
+    def get(self, request, *args, **kwargs):
+        internships = Internship.objects.all().order_by('-id')[:10]
+        serializer = self.serializer_class(internships, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 
 class Student_Dashboard(APIView):
