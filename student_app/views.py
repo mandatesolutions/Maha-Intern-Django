@@ -119,15 +119,14 @@ class Student_InternshipDetail(APIView):
 
 class Student_Internshipapply(APIView):
     permission_classes = [IsAuthenticated, IsStudent]
-    serializer_class = ApplicationSerializer
+    serializer_class = Add_ApplicationSerializer
     
     parser_classes = (MultiPartParser, FormParser)
     @swagger_auto_schema(tags=['Student APIs'], request_body=serializer_class, operation_description="Api of Apply for Internship", operation_summary="Apply for Internship")
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            # Set the student to the logged-in user
-            # serializer.validated_data['student'] = request.user
+            serializer.validated_data['student'] = Student.objects.get(user=request.user)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

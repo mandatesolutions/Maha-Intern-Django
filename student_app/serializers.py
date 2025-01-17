@@ -29,6 +29,12 @@ class InternshipSerializer(serializers.ModelSerializer):
         model = Internship
         fields = "__all__"
         
+
+class Add_ApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Application
+        fields = ['internship', 'resume']
+        
         
 class ApplicationSerializer(serializers.ModelSerializer):
     class Meta:
