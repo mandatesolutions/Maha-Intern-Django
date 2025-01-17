@@ -41,9 +41,27 @@ class Student_Registration(APIView):
 class Student_GetInternships(APIView):
     serializer_class = InternshipSerializers
 
-    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get 10 Internships", operation_summary="Get Get 10 Internships")
+    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get 10 Internships", operation_summary="Get 10 Internships")
     def get(self, request, *args, **kwargs):
-        internships = Internship.objects.all().order_by('-id')[:10]
+        internships = Internship.objects.all().order_by('-id')[:9]
+        serializer = self.serializer_class(internships, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class Search_Internships(APIView):
+    serializer_class = InternshipSerializers
+
+    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Search Internships", operation_summary="Search Internships")
+    def get(self, request, *args, **kwargs):
+        title = request.query_params.get('title', None)
+        location = request.query_params.get('location', None)
+        
+        internships = Internship.objects.all()
+        if title:
+            internships = internships.filter(title__icontains=title)  # Case-insensitive search on title
+        if location:
+            internships = internships.filter(location__icontains=location)  # Case-insensitive search on location
+            
         serializer = self.serializer_class(internships, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
