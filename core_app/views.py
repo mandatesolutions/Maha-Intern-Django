@@ -41,7 +41,7 @@ class LoginView(APIView):
             access_token = refresh.access_token
 
             # Return the tokens
-            return Response({"success":"Login Successfully.","role":UserModel.objects.get(email=user).role,'refresh': str(refresh),'access': str(access_token)},status=status.HTTP_200_OK)
+            return Response({'access': str(access_token), 'refresh': str(refresh), "role":UserModel.objects.get(email=user).role, 'name':f"{user.first_name} {user.last_name}"},status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
