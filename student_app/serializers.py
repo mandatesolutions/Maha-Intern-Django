@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import *
 from core_app.models import *
 from organization_app.models import *
+from organization_app.serializers import *
 
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -37,6 +38,24 @@ class Add_ApplicationSerializer(serializers.ModelSerializer):
         
         
 class ApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Application
+        fields = "__all__"
+        
+
+class Org_appliedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Organization
+        fields = ["company_name"]
+
+class Internship_appliedSerializer(serializers.ModelSerializer):
+    company = Org_appliedSerializer()
+    class Meta:
+        model = Internship
+        fields = ["intern_id", "title", "description", "location", "duration", "company"]
+
+class Applied_Serializer(serializers.ModelSerializer):
+    internship = Internship_appliedSerializer()
     class Meta:
         model = Application
         fields = "__all__"

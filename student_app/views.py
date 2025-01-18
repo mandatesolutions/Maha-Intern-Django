@@ -120,12 +120,18 @@ class Student_InternshipDetail(APIView):
 class Student_Internshipapply(APIView):
     permission_classes = [IsAuthenticated, IsStudent]
     serializer_class = Add_ApplicationSerializer
-    
     parser_classes = (MultiPartParser, FormParser)
+ 
     @swagger_auto_schema(tags=['Student APIs'], request_body=serializer_class, operation_description="Api of Apply for Internship", operation_summary="Apply for Internship")
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
+            student = Student.objects.get(user=request.user)
+            internship = serializer.validated_data['internship']
+            
+            if Application.objects.filter(student=student, internship=internship).exists():
+                return Response({"message": "You have already applied for this internship."}, status=status.HTTP_400_BAD_REQUEST)
+            
             serializer.validated_data['student'] = Student.objects.get(user=request.user)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -142,5 +148,5 @@ class Student_Applications(APIView):
         if not applications:
             return Response({"message": "No applications found for this user."}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = ApplicationSerializer(applications, many=True)
+        serializer = Applied_Serializer(applications, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
