@@ -25,9 +25,18 @@ class OrgUserModelSerializer(serializers.ModelSerializer):
     
 
 class InternshipSerializers(serializers.ModelSerializer):
+    has_applied = serializers.SerializerMethodField()
     class Meta:
         model = Internship
         fields = "__all__"
+    
+    def get_has_applied(self, obj):
+        user = self.context.get('request').user
+        if hasattr(user, 'student'):
+            student = user.student
+            application = Application.objects.filter(student=student, internship=obj).first()
+            return True if application else False
+        return False
 
 
 

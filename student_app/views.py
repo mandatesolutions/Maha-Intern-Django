@@ -44,14 +44,14 @@ class Student_GetInternships(APIView):
     @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get 10 Internships", operation_summary="Get 10 Internships")
     def get(self, request, *args, **kwargs):
         internships = Internship.objects.all().order_by('-id')[:9]
-        serializer = self.serializer_class(internships, many=True)
+        serializer = self.serializer_class(internships, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class Search_Internships(APIView):
     serializer_class = InternshipSerializers
 
-    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Search Internships", operation_summary="Search Internships")
+    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Search Internships", operation_summary="Search Internships by passing ?title=''&location=''")
     def get(self, request, *args, **kwargs):
         title = request.query_params.get('title', None)
         location = request.query_params.get('location', None)
