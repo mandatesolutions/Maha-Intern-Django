@@ -150,3 +150,17 @@ class Student_Applications(APIView):
 
         serializer = Applied_Serializer(applications, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class Applicationsby_status(APIView):
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get applications of student by Status", operation_summary="Get applications of student by Status = Pending,Shortlisted,Rejected,Selected")
+    def get(self, request, stat):
+        applications = Application.objects.filter(student__user=request.user, status=stat)
+
+        if not applications:
+            return Response({"message": "No applications found for this user."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = Applied_Serializer(applications, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
