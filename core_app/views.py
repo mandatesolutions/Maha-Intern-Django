@@ -9,17 +9,17 @@ from .models import *
 # Create your views here.
 
 
-class Registration(APIView):
-    serializer_class = UserSerialiazer
-    permission_classes = [permissions.AllowAny]
+# class Registration(APIView):
+#     serializer_class = UserSerialiazer
+#     permission_classes = [permissions.AllowAny]
     
-    @swagger_auto_schema(tags=['Config APIs'], operation_description="API for Registration", operation_summary="Registration API",request_body=serializer_class)
-    def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#     @swagger_auto_schema(tags=['Config APIs'], operation_description="API for Registration", operation_summary="Registration API",request_body=serializer_class)
+#     def post(self, request, *args, **kwargs):
+#         serializer = self.serializer_class(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
 # login api user

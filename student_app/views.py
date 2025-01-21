@@ -49,7 +49,7 @@ class Student_GetInternships(APIView):
 
 
 class Search_Internships(APIView):
-    serializer_class = InternshipSerializers
+    serializer_class = InternshipSerializer
 
     @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Search Internships", operation_summary="Search Internships by passing ?title=''&location=''")
     def get(self, request, *args, **kwargs):
