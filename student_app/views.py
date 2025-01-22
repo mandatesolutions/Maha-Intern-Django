@@ -82,7 +82,7 @@ class Student_Dashboard(APIView):
     
 class Student_ProfileDetail(APIView):
     permission_classes = [IsAuthenticated, IsStudent]
-    serializer_class = UserModelSerializer
+    serializer_class = Update_UserModelSerializer
 
     @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get Profile", operation_summary="Get Profile")
     def get(self, request, *args, **kwargs):

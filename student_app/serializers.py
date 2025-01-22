@@ -11,7 +11,7 @@ class StudentSerializer(serializers.ModelSerializer):
 
 
 class UserModelSerializer(serializers.ModelSerializer):
-    student = StudentSerializer(read_only=True)
+    student = StudentSerializer()
 
     class Meta:
         model = UserModel
@@ -24,6 +24,36 @@ class UserModelSerializer(serializers.ModelSerializer):
         Student.objects.create(user=user, **student_data)
         return user
 
+
+class Update_UserModelSerializer(serializers.ModelSerializer):
+    student = StudentSerializer()
+
+    class Meta:
+        model = UserModel
+        fields = ['first_name', 'last_name', 'mobile', 'role', 'email', 'password', 'student']
+        extra_kwargs = {'password': {'write_only': True}}
+
+    def update(self, instance, validated_data):
+        # Extract candidate data from validated_data and remove it from the main update data
+        student_data = validated_data.pop('student', None)
+
+        # Update the main user fields first (name, mobile, etc.)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.mobile = validated_data.get('mobile', instance.mobile)
+        instance.role = validated_data.get('role', instance.role)
+        instance.email = validated_data.get('email', instance.email)
+
+        instance.save()
+
+        if student_data:
+            student_instance = instance.student
+            for attr, value in student_data.items():
+                setattr(student_instance, attr, value)
+            student_instance.save()
+
+        return instance
+    
 
 class InternshipSerializer(serializers.ModelSerializer):
     class Meta:
