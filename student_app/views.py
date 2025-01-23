@@ -58,9 +58,9 @@ class Search_Internships(APIView):
         
         internships = Internship.objects.all()
         if title:
-            internships = internships.filter(title__icontains=title)  # Case-insensitive search on title
+            internships = internships.filter(title__icontains=title) | internships.filter(skills_required__icontains=title) | internships.filter(company__company_name__icontains=title)
         if location:
-            internships = internships.filter(location__icontains=location)  # Case-insensitive search on location
+            internships = internships.filter(location__icontains=location)
             
         serializer = self.serializer_class(internships, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -102,18 +102,18 @@ class Student_ProfileDetail(APIView):
     
 
 class Student_InternshipDetail(APIView):
-    serializer_class = InternshipSerializer
+    serializer_class = InternshipSerializers
     
     def get_object(self, uid):
         try:
             return Internship.objects.get(intern_id=uid)
         except Internship.DoesNotExist:
-            raise NotFound("Scholarship not found.")
+            raise NotFound("Internship not found.")
 
     @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get Internship by uid", operation_summary="Get Internship by id")
     def get(self, request, uid, format=None):
         internship = self.get_object(uid)
-        serializer = self.serializer_class(internship)
+        serializer = self.serializer_class(internship, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
