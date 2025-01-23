@@ -8,19 +8,20 @@ from rest_framework.permissions import BasePermission
 from drf_yasg.utils import swagger_auto_schema
 
 from .serializers import *
-from student_app.serializers import UserModelSerializer
+from student_app.serializers import *
 from student_app.models import Student
+
 # Create your views here.
 
 class RegisterOrganization(APIView):
-    serializer_classes = OrgUserModelSerializer
+    serializer_class = OrgUserModelSerializer
 
-    @swagger_auto_schema(tags=['Organization APIs'], request_body=serializer_classes, operation_description="API for Organization Registration", operation_summary="API for Organization Registration")
+    @swagger_auto_schema(tags=['Organization APIs'], request_body=serializer_class, operation_description="API for Organization Registration", operation_summary="API for Organization Registration")
     def post(self, request, *args, **kwargs):
         if 'role' not in request.data or not request.data['role']:
             request.data['role'] = 'Organization'
         
-        serializer = self.serializer_classes(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -95,7 +96,7 @@ class UpdateIntern(APIView):
 
 class GetInternData(APIView):
     permission_classes=[IsAuthenticated]
-    serializer_classes = InternshipSerializers
+    serializer_class = InternshipSerializers
 
     @swagger_auto_schema(tags=['Organization APIs'],operation_description="One Internship data show organization",operation_summary="One Internship data show organization")
     def get(self,request,intern_id):
@@ -106,29 +107,26 @@ class GetInternData(APIView):
             return Response({"detail": "Internship not found."}, status=status.HTTP_404_NOT_FOUND)
         
         # Pass the object to the serializer to update it
-        serializer = self.serializer_classes(intern_obj)
+        serializer = self.serializer_class(intern_obj)
         return Response(serializer.data, status=status.HTTP_200_OK)  # Return the updated data
     
 
 
-class ShowInternship(APIView):
+class Org_GetInternships(APIView):
     permission_classes=[IsAuthenticated]
-    serializer_classes = InternshipSerializers
-
+    serializer_class = InternshipSerializer
 
     @swagger_auto_schema(tags=['Organization APIs'],operation_description="All Internships data show organization",operation_summary="All Internships data show organization")
-    def get(self,request,organ_id):
-        organization_obj = Organization.objects.get(org_id=organ_id)
-        intern_queryset = Internship.objects.filter(company_id=organization_obj.id)
-        # Pass the  queryset to the serializer to update it
-        serializer = self.serializer_classes(intern_queryset,many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)  # Return the updated data
-
+    def get(self, request, *args, **kwargs):        
+        organisation = Organization.objects.get(user=request.user)
+        internships = Internship.objects.filter(company=organisation.id)
+        serializer = self.serializer_class(internships, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class DeleteIntern(APIView):
     permission_classes=[IsAuthenticated]
-    serializer_classes = InternshipSerializers
+    serializer_class = InternshipSerializers
 
     @swagger_auto_schema(tags=['Organization APIs'],operation_description="Delete Internships data show organization",operation_summary="Delete Internships data")
     
@@ -145,7 +143,7 @@ class DeleteIntern(APIView):
 
 class OrganizationAllApps(APIView):
     permission_classes=[IsAuthenticated]
-    serializer_classes = ApplicationSerializer
+    serializer_class = ApplicationSerializer
 
 
     @swagger_auto_schema(tags=['Organization APIs'],operation_description="All Internships data show organization",operation_summary="All Internships data show organization")
@@ -153,16 +151,16 @@ class OrganizationAllApps(APIView):
         intern_obj=Internship.objects.get(intern_id=intern_id)
         apps_data = Application.objects.filter(internship_id=intern_obj.id)
         # Pass the  queryset to the serializer to update it
-        serializer = self.serializer_classes(apps_data,many=True)
+        serializer = self.serializer_class(apps_data,many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)  # Return the updated data
     
 
 class UpdateAppsStatus(APIView):
     permission_classes=[IsAuthenticated]
-    serializer_classes = AppUpdateSerializer
+    serializer_class = AppUpdateSerializer
 
     @swagger_auto_schema(tags=['Organization APIs'],operation_description="update status for application by organization",operation_summary="update status for application by organization"
-                         ,request_body=serializer_classes)
+                         ,request_body=serializer_class)
     
     def put(self,request):
         intern_id = request.data.get('internship')
@@ -174,7 +172,7 @@ class UpdateAppsStatus(APIView):
             return Response({"detail": "Application not found."}, status=status.HTTP_404_NOT_FOUND)
 
    
-        serializer = self.serializer_classes(app_data, data=request.data, partial=True)  # partial=True allows partial updates
+        serializer = self.serializer_class(app_data, data=request.data, partial=True)  # partial=True allows partial updates
     
         if serializer.is_valid():
             serializer.save()  # Save the updated data
@@ -217,6 +215,8 @@ class OrgDashCounter(APIView):
         Shortlisted_app=intern_apps.filter(status='Shortlisted').count()
         Rejected_app=intern_apps.filter(status='Rejected').count()
         
+        user = Organization.objects.get(user= request.user)
+        print(user.org_id)
 
         response_data= {"org_app_total":org_app_total,"Pending_app":Pending_app,"Selected_app":Selected_app,"Shortlisted_app":Shortlisted_app
                         ,"Rejected_app":Rejected_app}

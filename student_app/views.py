@@ -73,11 +73,12 @@ class Student_Dashboard(APIView):
     def get(self, request, *args, **kwargs):
         applied = Application.objects.filter(student__user=request.user)
         appliedcount = applied.count()
+        pending = applied.filter(status='Pending').count()
         shortlisted = applied.filter(status='Shortlisted').count()
         selected = applied.filter(status='Selected').count()
         rejected = applied.filter(status='Rejected').count()
         
-        return Response({'appliedcount': appliedcount, 'shortlisted': shortlisted, 'selected': selected, 'rejected': rejected,}, status=status.HTTP_200_OK)
+        return Response({'appliedcount': appliedcount, 'pending': pending, 'shortlisted': shortlisted, 'selected': selected, 'rejected': rejected,}, status=status.HTTP_200_OK)
     
     
 class Student_ProfileDetail(APIView):
