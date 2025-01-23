@@ -5,7 +5,7 @@ from .models import *
 class OrganizationSerializers(serializers.ModelSerializer):
     class Meta:
         model = Organization
-        fields = ["company_name","industry_type","company_id_type","company_unique_id","reprsentative_name","district",
+        fields = ["id", "org_id", "company_name","industry_type","company_id_type","company_unique_id","reprsentative_name","district",
                   "taluka","organization_logo"]
         
 
