@@ -25,10 +25,11 @@ class OrgUserModelSerializer(serializers.ModelSerializer):
     
 
 class InternshipSerializers(serializers.ModelSerializer):
+    company = OrganizationSerializers()
     has_applied = serializers.SerializerMethodField()
     class Meta:
         model = Internship
-        fields = "__all__"
+        fields = ['id', 'has_applied', 'intern_id', 'intern_type', 'title', 'description', 'no_of_openings', 'stipend_type', 'stipend_amount', 'location', 'duration', 'skills_required', 'contact_email', 'contact_mobile', 'start_date', 'last_date_of_apply', 'perks', 'qualification_in', 'specialisation_in', 'terms', 'company']
     
     def get_has_applied(self, obj):
         user = self.context.get('request').user
