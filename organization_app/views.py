@@ -82,7 +82,7 @@ class GetInternData(APIView):
 
 class Update_Internship(APIView):
     permission_classes = [IsAuthenticated, IsOrg]
-    serializer_class = Intern_Serializer
+    serializer_class = InternshipSerializer
 
     @swagger_auto_schema(tags=['Organization APIs'],operation_description="Update Internship by organization",operation_summary="Update Internship by organization", request_body=serializer_class)
     def put(self, request, intern_id):

@@ -40,25 +40,25 @@ class InternshipSerializers(serializers.ModelSerializer):
         return False
 
 
-class Intern_Serializer(serializers.ModelSerializer):
-    company = OrganizationSerializers()
-    class Meta:
-        model = Internship
-        fields = ['id', 'intern_id', 'intern_type', 'title', 'description', 'no_of_openings', 'stipend_type', 'stipend_amount', 'location', 'duration', 'skills_required', 'contact_email', 'contact_mobile', 'start_date', 'last_date_of_apply', 'perks', 'qualification_in', 'specialisation_in', 'terms', 'company']
+# class Intern_Serializer(serializers.ModelSerializer):
+#     company = OrganizationSerializers()
+#     class Meta:
+#         model = Internship
+#         fields = ['id', 'intern_id', 'intern_type', 'title', 'description', 'no_of_openings', 'stipend_type', 'stipend_amount', 'location', 'duration', 'skills_required', 'contact_email', 'contact_mobile', 'start_date', 'last_date_of_apply', 'perks', 'qualification_in', 'specialisation_in', 'terms', 'company']
     
-    def update(self, instance, validated_data):
-        company_data = validated_data.pop('company', None)
+#     def update(self, instance, validated_data):
+#         company_data = validated_data.pop('company', None)
         
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
+#         for attr, value in validated_data.items():
+#             setattr(instance, attr, value)
+#         instance.save()
 
-        if company_data:
-            company_instance  = instance.company
-            for attr, value in company_data.items():
-                setattr(company_instance , attr, value)
-            company_instance .save()
-        return instance
+#         if company_data:
+#             company_instance  = instance.company
+#             for attr, value in company_data.items():
+#                 setattr(company_instance , attr, value)
+#             company_instance .save()
+#         return instance
 
 
 class ApplicationSerializer(serializers.ModelSerializer):
