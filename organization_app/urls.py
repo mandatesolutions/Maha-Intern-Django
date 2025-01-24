@@ -7,10 +7,10 @@ urlpatterns = [
     path('register-organization',views.RegisterOrganization.as_view(), name='register-organization'),
     path('get-org-profile',views.GetOrgProfile.as_view(), name='get-org-profile'),
     
-    path('add-intern', views.AddIntern.as_view(), name='add-intern'),
+    path('add-internship', views.Add_Internship.as_view(), name='add-internship'),
     path('get-orginternships/', views.Org_GetInternships.as_view(), name='show-orginternships'), #all internship data to list  on dashboard
     path('get-intern/<str:intern_id>', views.GetInternData.as_view(), name='get-intern'),
-    path('update-intern/<str:intern_id>', views.UpdateIntern.as_view(), name='update-intern'),
+    path('update-internship/<str:intern_id>', views.Update_Internship.as_view(), name='update-internship'),
     
     # if required
     path('delete-intern/<int:intern_id>', views.DeleteIntern.as_view(), name='delete-intern'),

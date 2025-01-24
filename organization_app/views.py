@@ -35,80 +35,70 @@ class IsOrg(BasePermission):
 
 class GetOrgProfile(APIView):
     permission_classes = [IsAuthenticated, IsOrg]
-    serializers_classes = OrgUserModelSerializer
+    serializer_class = OrgUserModelSerializer
 
-    @swagger_auto_schema(tags=['Organization APIs'],operation_description="get organization data to profile",operation_summary="get organization data to profile"
-                        )
-    
+    @swagger_auto_schema(tags=['Organization APIs'],operation_description="get organization data to profile",operation_summary="get organization data to profile")
     def get(self,request):
         user = request.user
-        serializer = self.serializers_classes(user)
+        serializer = self.serializer_class(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class AddIntern(APIView):
+class Add_Internship(APIView):
     permission_classes = [IsAuthenticated, IsOrg]
-    serializers_classes = InternshipSerializers
+    serializer_class = InternshipSerializer
 
-    @swagger_auto_schema(tags=['Organization APIs'],operation_description="Add Internship to display Students",operation_summary="Add Internship to display Students",
-                        request_body=serializers_classes
-                        )
-
+    @swagger_auto_schema(tags=['Organization APIs'],operation_description="API For Add Internship By Organisation",operation_summary="API for Add Internship By Organisation", request_body=serializer_class)
     def post(self,request):
-        if request.method=='POST':
-            data=request.data
-            data['company'] = request.user.id
-            serialziser=self.serializers_classes(data=data)
-            if serialziser.is_valid():
-                serialziser.save()
-                return Response(serialziser.data,status=status.HTTP_201_CREATED)
-            else:
-                return Response(serialziser.errors,status=status.HTTP_400_BAD_REQUEST)
-            
-
-class UpdateIntern(APIView):
-    permission_classes = [IsAuthenticated, IsOrg]
-    serializers_classes = InternshipSerializers
-
-
-    @swagger_auto_schema(tags=['Organization APIs'],operation_description="Update Internship by organization",operation_summary="Update Internship by organization",
-                        request_body=serializers_classes
-                        )
-    def put(self, request, intern_id):
-        # Get the data from the request
-        intern_data = request.data
-        
         try:
-            # Get the existing Internship object by intern_id
-            intern_obj = Internship.objects.get(intern_id=intern_id)
-        except Internship.DoesNotExist:
-            return Response({"detail": "Internship not found."}, status=status.HTTP_404_NOT_FOUND)
+            org = Organization.objects.get(user=request.user)
+        except Organization.DoesNotExist:
+            return Response({"error": "Organization not found for this user."}, status=status.HTTP_404_NOT_FOUND)
         
-        # Pass the object to the serializer to update it
-        serializer = self.serializers_classes(data=intern_data, instance=intern_obj)
+        data=request.data
+        data['company'] = org.id
         
+        serializer = self.serializer_class(data=data)
         if serializer.is_valid():
-            serializer.save()  # Save the updated data
-            return Response(serializer.data, status=status.HTTP_200_OK)  # Return the updated data
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)  # Return validation errors
-
-
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            
 class GetInternData(APIView):
     permission_classes=[IsAuthenticated]
     serializer_class = InternshipSerializers
 
     @swagger_auto_schema(tags=['Organization APIs'],operation_description="One Internship data show organization",operation_summary="One Internship data show organization")
-    def get(self,request,intern_id):
+    def get(self, request, intern_id):
         try:
-            # Get the existing Internship object by intern_id
             intern_obj = Internship.objects.get(intern_id=intern_id)
         except Internship.DoesNotExist:
             return Response({"detail": "Internship not found."}, status=status.HTTP_404_NOT_FOUND)
         
-        # Pass the object to the serializer to update it
-        serializer = self.serializer_class(intern_obj)
+        serializer = self.serializer_class(intern_obj, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)  # Return the updated data
+    
+
+class Update_Internship(APIView):
+    permission_classes = [IsAuthenticated, IsOrg]
+    serializer_class = Intern_Serializer
+
+    @swagger_auto_schema(tags=['Organization APIs'],operation_description="Update Internship by organization",operation_summary="Update Internship by organization", request_body=serializer_class)
+    def put(self, request, intern_id):
+        intern_data = request.data
+        
+        try:
+            intern_obj = Internship.objects.get(intern_id=intern_id)
+        except Internship.DoesNotExist:
+            return Response({"detail": "Internship not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = self.serializer_class(data=intern_data, instance=intern_obj, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
 
