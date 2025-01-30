@@ -66,6 +66,18 @@ class ApplicationSerializer(serializers.ModelSerializer):
         model = Application
         fields = "__all__"
 
+class ShowAllApplications(serializers.ModelSerializer):
+    student_email = serializers.CharField(source='student.user.email', read_only=True)
+    student_name = serializers.SerializerMethodField()
+    class Meta:
+        model = Application
+        fields = "__all__"
+
+    def get_student_name(self, obj):
+        first_name = obj.student.user.first_name
+        last_name = obj.student.user.last_name
+        return f"{first_name} {last_name}"
+
 
 class AppUpdateSerializer(serializers.ModelSerializer):
     class Meta:

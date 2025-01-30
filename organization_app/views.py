@@ -133,7 +133,7 @@ class DeleteIntern(APIView):
 
 class OrganizationAllApps(APIView):
     permission_classes=[IsAuthenticated]
-    serializer_class = ApplicationSerializer
+    serializer_class = ShowAllApplications
 
 
     @swagger_auto_schema(tags=['Organization APIs'],operation_description="All Internships data show organization",operation_summary="All Internships data show organization")
