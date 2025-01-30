@@ -13,7 +13,7 @@ urlpatterns = [
     path('update-internship/<str:intern_id>', views.Update_Internship.as_view(), name='update-internship'),
     
     # if required
-    path('delete-intern/<int:intern_id>', views.DeleteIntern.as_view(), name='delete-intern'),
+    path('delete-intern/<str:intern_id>', views.DeleteIntern.as_view(), name='delete-intern'),
 
     # All Applications for organization
 
