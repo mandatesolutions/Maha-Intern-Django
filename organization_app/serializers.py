@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import *
+from django.conf import settings
+from urllib.parse import urljoin
 
 
 class OrganizationSerializers(serializers.ModelSerializer):
@@ -69,6 +71,8 @@ class ApplicationSerializer(serializers.ModelSerializer):
 class ShowAllApplications(serializers.ModelSerializer):
     student_email = serializers.CharField(source='student.user.email', read_only=True)
     student_name = serializers.SerializerMethodField()
+    resume = serializers.SerializerMethodField()
+    intern_uid = serializers.CharField(source = 'internship.intern_id',read_only = True)
     class Meta:
         model = Application
         fields = "__all__"
@@ -77,6 +81,11 @@ class ShowAllApplications(serializers.ModelSerializer):
         first_name = obj.student.user.first_name
         last_name = obj.student.user.last_name
         return f"{first_name} {last_name}"
+    
+    def get_resume(self,obj):
+        if obj.resume:
+            return urljoin(settings.SITE_URL, str(obj.resume.url))
+        return None
 
 
 class AppUpdateSerializer(serializers.ModelSerializer):
