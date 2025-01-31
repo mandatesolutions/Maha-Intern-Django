@@ -36,12 +36,23 @@ class IsOrg(BasePermission):
 class GetOrgProfile(APIView):
     permission_classes = [IsAuthenticated, IsOrg]
     serializer_class = OrgUserModelSerializer
+    serializer_class1 = UpdateOrganizationSerializer
 
     @swagger_auto_schema(tags=['Organization APIs'],operation_description="get organization data to profile",operation_summary="get organization data to profile")
     def get(self,request):
         user = request.user
         serializer = self.serializer_class(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+    @swagger_auto_schema(tags=['Organization APIs'], request_body=serializer_class1, operation_description="Organization api for Edit Profile", operation_summary="Organization api for Edit Profile")
+    def put(self, request, *args, **kwargs):
+        user = request.user
+        serializer = self.serializer_class1(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class Add_Internship(APIView):

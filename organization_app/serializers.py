@@ -25,6 +25,36 @@ class OrgUserModelSerializer(serializers.ModelSerializer):
         Organization.objects.create(user=user, **organization_data)
         return user
     
+class UpdateOrganizationSerializer(serializers.ModelSerializer):
+    organization = OrganizationSerializers()
+
+    class Meta:
+        model = UserModel
+        fields = ['first_name', 'last_name', 'mobile', 'role', 'email', 'organization']
+
+    def update(self, instance, validated_data):
+        # Extract candidate data from validated_data and remove it from the main update data
+        organ_data = validated_data.pop('organization', None)
+
+        # Update the main user fields first (name, mobile, etc.)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.mobile = validated_data.get('mobile', instance.mobile)
+        instance.role = validated_data.get('role', instance.role)
+        instance.email = validated_data.get('email', instance.email)
+
+        instance.save()
+
+        if organ_data:
+            organ_instance = instance.organization
+            for attr, value in organ_data.items():
+                setattr(organ_instance, attr, value)
+            organ_instance.save()
+
+        return instance
+    
+
+    
 
 class InternshipSerializers(serializers.ModelSerializer):
     company = OrganizationSerializers()
