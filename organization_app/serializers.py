@@ -56,9 +56,10 @@ class UpdateOrganizationSerializer(serializers.ModelSerializer):
 
 
 class AdminShowInternshipSerializers(serializers.ModelSerializer):
+    company_name = serializers.CharField(source = 'company.company_name')
     class Meta:
         model = Internship
-        fields = ['id','intern_id', 'intern_type', 'title', 'description', 'no_of_openings', 'stipend_type', 'stipend_amount', 
+        fields = ['id','intern_id', 'intern_type','company_name','title', 'description', 'no_of_openings', 'stipend_type', 'stipend_amount', 
                   'location', 'duration', 'skills_required', 'contact_email', 'contact_mobile', 'start_date', 
                   'last_date_of_apply', 'perks', 'qualification_in', 'specialisation_in', 'terms']
 
