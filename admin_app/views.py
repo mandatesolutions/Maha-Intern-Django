@@ -50,7 +50,7 @@ class AllOrganization(APIView):
     
 
 class InternshipsByOrgan(APIView):
-    serializer_classes = InternshipSerializers
+    serializer_classes = AdminShowInternshipSerializers
     permission_classes=[IsAuthenticated]
 
     @swagger_auto_schema(tags=['Admin APIs'],operation_description="show internship all data",operation_summary="show internship all data")

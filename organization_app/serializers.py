@@ -54,7 +54,14 @@ class UpdateOrganizationSerializer(serializers.ModelSerializer):
         return instance
     
 
-    
+
+class AdminShowInternshipSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Internship
+        fields = ['id','intern_id', 'intern_type', 'title', 'description', 'no_of_openings', 'stipend_type', 'stipend_amount', 
+                  'location', 'duration', 'skills_required', 'contact_email', 'contact_mobile', 'start_date', 
+                  'last_date_of_apply', 'perks', 'qualification_in', 'specialisation_in', 'terms']
+
 
 class InternshipSerializers(serializers.ModelSerializer):
     company = OrganizationSerializers()
