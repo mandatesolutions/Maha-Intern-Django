@@ -68,7 +68,7 @@ class InternshipsByOrgan(APIView):
 
 
 class AppsByIntern(APIView):
-    serializer_classes = ApplicationSerializer
+    serializer_classes = ShowInternApplicationSerializer
     permission_classes=[IsAuthenticated]
 
 

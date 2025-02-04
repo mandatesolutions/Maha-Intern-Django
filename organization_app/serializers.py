@@ -106,6 +106,24 @@ class ApplicationSerializer(serializers.ModelSerializer):
         model = Application
         fields = "__all__"
 
+
+class ShowInternApplicationSerializer(serializers.ModelSerializer):
+    student_name = serializers.SerializerMethodField()
+    resume = serializers.SerializerMethodField()
+    class Meta:
+        model = Application
+        fields = "__all__"
+
+    def get_resume(self, obj):
+        if obj.resume:
+            return urljoin(settings.SITE_URL, str(obj.resume.url))
+        return None
+    
+    def get_student_name(self, obj):
+        first_name = obj.student.user.first_name
+        last_name = obj.student.user.last_name
+        return f"{first_name} {last_name}"
+
 class ShowAllApplications(serializers.ModelSerializer):
     student_email = serializers.CharField(source='student.user.email', read_only=True)
     student_name = serializers.SerializerMethodField()
