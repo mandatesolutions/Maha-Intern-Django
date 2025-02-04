@@ -148,6 +148,23 @@ class GetStudentReport(APIView):
 
 
 
+class GetJoinedStudents(APIView):
+    permission_classes=[IsAuthenticated]
+
+    def get(self,request,organ_uid):
+        organization = Organization.objects.get(org_id=organ_uid)
+        internships = Internship.objects.filter(company=organization)
+        applications = Application.objects.filter(internship__in=internships)
+        selected_students = SelectedStudentModel.objects.filter(application__in=applications)
+
+        serializer = AdminSelectedStudentSerializer(selected_students, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+    
+
+
+
 
 
 

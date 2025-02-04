@@ -154,3 +154,22 @@ class MonthlyReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = MonthlyReport
         fields = "__all__"
+
+
+class SelectedStudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SelectedStudentModel
+        fields = '__all__'
+
+class AdminSelectedStudentSerializer(serializers.ModelSerializer):
+    student_name = serializers.SerializerMethodField()
+    class Meta:
+        model = SelectedStudentModel
+        fields = '__all__'
+
+
+    def get_student_name(self, obj):
+        first_name = obj.application.student.user.first_name
+        last_name = obj.application.student.user.last_name
+        return f"{first_name} {last_name}"
+    

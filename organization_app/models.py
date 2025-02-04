@@ -106,11 +106,22 @@ class Application(models.Model):
         super().save(*args, **kwargs)
 
 
+class SelectedStudentModel(models.Model):
+    application = models.ForeignKey('organization_app.Application', on_delete=models.CASCADE, related_name='selected_student')
+    joining_date = models.DateField(null=True,blank=True)
+    status = models.CharField(max_length=20, choices=[('Joined', 'Joined'), ('Working', 'Working'), ('Completed', 'Completed')], default='Joined')
+
+    class Meta:
+        app_label = 'organization_app'
+        db_table = 'SelectedStudentModel'
+
+
+
 class MonthlyReport(models.Model):
     report_id = models.CharField(max_length=50, unique=True, editable=False, null=True)
     application = models.ForeignKey('organization_app.Application', on_delete=models.CASCADE, related_name='monthly_reports')
     month = models.CharField(max_length=50)  # This could be month
-    year = models.IntegerField()  # To capture the year
+    year = models.IntegerField()  # To capture the year 
     report_content = models.TextField(null=True, blank=True)  # The content of the report
     feedback = models.TextField(null=True, blank=True)  # Feedback from the company/organization
     report_file = models.FileField(upload_to='monthly_reports/', null=True, blank=True)

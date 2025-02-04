@@ -26,4 +26,13 @@ urlpatterns = [
 
     path('add-monthreport', views.Add_MonthReport.as_view(), name='add-monthreport'),
     path('monthreports/<str:stud_id>', views.MonthReportby_student.as_view(), name='monthreports-bystudent'),
+
+    # CRUD on SelectedStudent table
+
+    path('selected-student-save', views.SelectedStudent.as_view(), name='selected-student-save'),
+    path('get-all-selected', views.GetAllSelected.as_view(), name='get-all-selected'),
+    path('get-one-selected/<int:selected_id>', views.GetOneSelected.as_view(), name='get-one-selected'),
+    path('update-selected-student/<int:pk>', views.UpdateSelectedStudent.as_view(), name='update_selected_student'), 
+    path('delete-selected-student/<int:pk>', views.DeleteSelectedStudent.as_view(), name='delete_selected_student'),
+
 ]

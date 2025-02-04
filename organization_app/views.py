@@ -256,3 +256,102 @@ class MonthReportby_student(APIView):
         reports = MonthlyReport.objects.filter(application__student__stud_id = stud_id)
         serializer = self.serializer_class(reports, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+
+class SelectedStudent(APIView):
+    permission_classes = [IsAuthenticated,IsOrg]
+    serializer_classes = SelectedStudentSerializer
+
+    @swagger_auto_schema(tags=['Organization Selected-Student'], request_body=serializer_classes ,operation_description="Save Selected Student API", operation_summary="Save Selected Student API")
+
+    def post(self,request):
+        selected_query=request.data
+
+        serializer=self.serializer_classes(data=selected_query)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"success":"selected student status saved"},status=status.HTTP_201_CREATED)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+    
+class GetAllSelected(APIView):
+    permission_classes = [IsAuthenticated,IsOrg]
+    serializer_classes = SelectedStudentSerializer
+
+
+    @swagger_auto_schema(tags=['Organization Selected-Student'],operation_description="All Selected Student API by organization", operation_summary="All Selected Student API by organization")
+    def get(self,request):
+        organization = Organization.objects.get(user=request.user)
+        # Get the internships related to this organization
+        internships = Internship.objects.filter(company=organization)
+
+        # Get applications for those internships
+        applications = Application.objects.filter(internship__in=internships)
+
+        # Get selected students who have been linked to these applications
+        selected_students = SelectedStudentModel.objects.filter(application__in=applications)
+
+        # Serialize the selected students data
+        serializer = SelectedStudentSerializer(selected_students, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+
+class GetOneSelected(APIView):
+    permission_classes = [IsAuthenticated,IsOrg]
+    serializer_classes = SelectedStudentSerializer
+
+
+    @swagger_auto_schema(tags=['Organization Selected-Student'],operation_description="One Selected Student API by organization", operation_summary="One Selected Student API by organization")
+    def get(self,request,selected_id):
+        # Get selected students who have been linked to these applications
+        selected_students = SelectedStudentModel.objects.get(id=selected_id)
+
+        # Serialize the selected students data
+        serializer = SelectedStudentSerializer(selected_students)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+
+    
+
+
+class UpdateSelectedStudent(APIView):
+    permission_classes = [IsAuthenticated,IsOrg]
+    serializer_classes = SelectedStudentSerializer
+    @swagger_auto_schema(tags=['Organization Selected-Student'], request_body=serializer_classes , operation_description="Update Selected Student API", operation_summary="Update Selected Student API")
+    
+    def put(self, request, pk):
+        try:
+            # Find the student by primary key
+            selected_student = SelectedStudentModel.objects.get(id=pk)
+        except SelectedStudent.DoesNotExist:
+            return Response({"detail": "Selected student not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Serialize the instance with the data from the request
+        serializer = self.serializer_classes(selected_student, data=request.data, partial=False)
+
+        if serializer.is_valid():
+            serializer.save()  # Save the updated data
+            return Response({"success": "Selected student status updated."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeleteSelectedStudent(APIView):
+    permission_classes = [IsAuthenticated,IsOrg]
+    serializer_classes = SelectedStudentSerializer
+
+    @swagger_auto_schema(tags=['Organization Selected-Student'],operation_description="Delete Selected Student API", operation_summary="Delete Selected Student API")
+    def delete(self, request, pk):
+        try:
+            # Find the student by primary key
+            selected_student = SelectedStudentModel.objects.get(id=pk)
+        except SelectedStudent.DoesNotExist:
+            return Response({"detail": "Selected student not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Delete the selected student
+        selected_student.delete()
+        return Response({"success": "Selected student deleted."}, status=status.HTTP_200_OK)
+    
+
