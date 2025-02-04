@@ -151,6 +151,7 @@ class GetStudentReport(APIView):
 class GetJoinedStudents(APIView):
     permission_classes=[IsAuthenticated]
 
+    @swagger_auto_schema(tags=['Admin Selected-Student'],operation_description="Get Selected Students API by organization", operation_summary="Selected Students API by organization")
     def get(self,request,organ_uid):
         organization = Organization.objects.get(org_id=organ_uid)
         internships = Internship.objects.filter(company=organization)
