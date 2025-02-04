@@ -281,19 +281,23 @@ class GetAllSelected(APIView):
 
     @swagger_auto_schema(tags=['Organization Selected-Student'],operation_description="All Selected Student API by organization", operation_summary="All Selected Student API by organization")
     def get(self,request):
-        organization = Organization.objects.get(user=request.user)
-        # Get the internships related to this organization
-        internships = Internship.objects.filter(company=organization)
+        try:
+            organization = Organization.objects.get(user=request.user)
+       
+            internships = Internship.objects.filter(company=organization)
 
-        # Get applications for those internships
-        applications = Application.objects.filter(internship__in=internships)
+            applications = Application.objects.filter(internship__in=internships)
 
-        # Get selected students who have been linked to these applications
-        selected_students = SelectedStudentModel.objects.filter(application__in=applications)
+            # Get selected students who have been linked to these applications
+            selected_students = SelectedStudentModel.objects.filter(application__in=applications)
 
-        # Serialize the selected students data
-        serializer = SelectedStudentSerializer(selected_students, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            # Serialize the selected students data
+            serializer = SelectedStudentSerializer(selected_students, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        except Organization.DoesNotExist:
+            return Response({"organizations data not found"},status=status.HTTP_400_BAD_REQUEST)
+        
     
 
 
