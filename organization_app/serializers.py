@@ -187,6 +187,7 @@ class SelectedStudentSerializer(serializers.ModelSerializer):
 class AdminSelectedStudentSerializer(serializers.ModelSerializer):
     student_name = serializers.SerializerMethodField()
     internship_title = serializers.CharField(source='application.internship.title', read_only=True)
+    student_id = serializers.CharField(source='application.student.id', read_only=True)
     class Meta:
         model = SelectedStudentModel
         fields = '__all__'
