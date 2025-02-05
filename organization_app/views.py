@@ -278,7 +278,6 @@ class GetAllSelected(APIView):
     permission_classes = [IsAuthenticated,IsOrg]
     serializer_classes = SelectedStudentSerializer
 
-
     @swagger_auto_schema(tags=['Organization Selected-Student'],operation_description="All Selected Student API by organization", operation_summary="All Selected Student API by organization")
     def get(self,request):
         try:
@@ -292,7 +291,7 @@ class GetAllSelected(APIView):
             selected_students = SelectedStudentModel.objects.filter(application__in=applications)
 
             # Serialize the selected students data
-            serializer = SelectedStudentSerializer(selected_students, many=True)
+            serializer = AdminSelectedStudentSerializer(selected_students, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         except Organization.DoesNotExist:
