@@ -253,7 +253,7 @@ class MonthReportby_student(APIView):
 
     @swagger_auto_schema(tags=['Organization APIs'], operation_description="API for Get Report by Student", operation_summary="Get Report By Student")
     def get(self, request, stud_id, *args, **kwargs):
-        reports = MonthlyReport.objects.filter(application__student__stud_id = stud_id)
+        reports = MonthlyReport.objects.filter(application__student__id = stud_id)
         serializer = self.serializer_class(reports, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -325,10 +325,10 @@ class UpdateSelectedStudent(APIView):
     serializer_classes = SelectedStudentSerializer
     @swagger_auto_schema(tags=['Organization Selected-Student'], request_body=serializer_classes , operation_description="Update Selected Student API", operation_summary="Update Selected Student API")
     
-    def put(self, request, pk):
+    def put(self, request, selected_id):
         try:
             # Find the student by primary key
-            selected_student = SelectedStudentModel.objects.get(id=pk)
+            selected_student = SelectedStudentModel.objects.get(id=selected_id)
         except SelectedStudent.DoesNotExist:
             return Response({"detail": "Selected student not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -346,10 +346,10 @@ class DeleteSelectedStudent(APIView):
     serializer_classes = SelectedStudentSerializer
 
     @swagger_auto_schema(tags=['Organization Selected-Student'],operation_description="Delete Selected Student API", operation_summary="Delete Selected Student API")
-    def delete(self, request, pk):
+    def delete(self, request, selected_id):
         try:
             # Find the student by primary key
-            selected_student = SelectedStudentModel.objects.get(id=pk)
+            selected_student = SelectedStudentModel.objects.get(id=selected_id)
         except SelectedStudent.DoesNotExist:
             return Response({"detail": "Selected student not found."}, status=status.HTTP_404_NOT_FOUND)
 
