@@ -142,6 +142,21 @@ class ShowAllApplications(serializers.ModelSerializer):
         if obj.resume:
             return urljoin(settings.SITE_URL, str(obj.resume.url))
         return None
+    
+class ShowSelectedApplications(serializers.ModelSerializer):
+    student_email = serializers.CharField(source='student.user.email', read_only=True)
+    internship_title = serializers.CharField(source='internship.title', read_only=True)
+    student_name = serializers.SerializerMethodField()
+    class Meta:
+        model = Application
+        fields = ['id','student','internship','internship_title','applied_on','status','student_email','student_name']
+
+    
+
+    def get_student_name(self, obj):
+        first_name = obj.student.user.first_name
+        last_name = obj.student.user.last_name
+        return f"{first_name} {last_name}"
 
 
 class AppUpdateSerializer(serializers.ModelSerializer):

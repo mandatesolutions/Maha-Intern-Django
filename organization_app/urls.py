@@ -34,5 +34,7 @@ urlpatterns = [
     path('get-one-selected/<int:selected_id>', views.GetOneSelected.as_view(), name='get-one-selected'),
     path('update-selected-student/<int:pk>', views.UpdateSelectedStudent.as_view(), name='update_selected_student'), 
     path('delete-selected-student/<int:pk>', views.DeleteSelectedStudent.as_view(), name='delete_selected_student'),
+    path('all-selected-applications',views.AllSelectedApps.as_view(),name='all-selected-applications')
+
 
 ]

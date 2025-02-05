@@ -359,3 +359,19 @@ class DeleteSelectedStudent(APIView):
         return Response({"success": "Selected student deleted."}, status=status.HTTP_200_OK)
     
 
+class AllSelectedApps(APIView):
+    permission_classes = [IsAuthenticated,IsOrg]
+    serializer_classes = ShowSelectedApplications
+
+    @swagger_auto_schema(tags=['Organization Selected-List'],operation_description="show selected student API", operation_summary="show selected student API")
+    def get(self,request):
+        all_interns=Internship.objects.filter(company__user=request.user)
+        intern_apps = Application.objects.filter(internship__company__user=request.user,status='Selected')
+        serializer = self.serializer_classes(intern_apps,many=True)
+        return Response(serializer.data,status=status.HTTP_200_OK)
+
+
+
+
+    
+
