@@ -151,7 +151,7 @@ class GetStudentReport(APIView):
 class GetJoinedStudents(APIView):
     permission_classes=[IsAuthenticated]
 
-    @swagger_auto_schema(tags=['Admin Selected-Student'],operation_description="Get Selected Students API by organization", operation_summary="Selected Students API by organization")
+    @swagger_auto_schema(tags=['Admin Joined-Student'],operation_description="Get Joined Students API by organization", operation_summary="Joined Students API by organization")
     def get(self,request,organ_uid):
         organization = Organization.objects.get(org_id=organ_uid)
         internships = Internship.objects.filter(company=organization)
@@ -160,6 +160,23 @@ class GetJoinedStudents(APIView):
 
         serializer = AdminSelectedStudentSerializer(selected_students, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class OrgSelectedApps(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AdminShowSelectedApplications
+
+    @swagger_auto_schema(tags=['Admin Joined-Student'],operation_description="Get Selected Students API by organization", operation_summary="Selected Students API by organization")
+    def get(self,request,organ_uid):
+        organization = Organization.objects.get(org_id=organ_uid)
+        internships = Internship.objects.filter(company=organization)
+        applications = Application.objects.filter(internship__in=internships,status='Selected')
+
+        serializer=self.serializer_class(applications,many=True)
+
+        return Response(serializer.data,status=status.HTTP_200_OK)
+
+
+
     
 
     

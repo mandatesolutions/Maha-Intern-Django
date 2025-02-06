@@ -165,6 +165,32 @@ class ShowSelectedApplications(serializers.ModelSerializer):
         first_name = obj.student.user.first_name
         last_name = obj.student.user.last_name
         return f"{first_name} {last_name}"
+    
+
+
+class AdminShowSelectedApplications(serializers.ModelSerializer):
+    student_email = serializers.CharField(source='student.user.email', read_only=True)
+    internship_title = serializers.CharField(source='internship.title', read_only=True)
+    orgnization_name=serializers.CharField(source='internship.company.company_name')
+    student_name = serializers.SerializerMethodField()
+    is_joined = serializers.SerializerMethodField()
+    class Meta:
+        model = Application
+        fields = ['id','student','internship','orgnization_name','internship_title','applied_on','status','student_email','student_name','is_joined']
+
+    def get_is_joined(self, obj):
+        # Check if a SelectedStudentModel instance exists for this application and if the status is 'Joined'
+        try:
+            selected_student = SelectedStudentModel.objects.get(application=obj)
+            return selected_student.status == 'Joined'  # Return True if status is 'Joined'
+        except SelectedStudentModel.DoesNotExist:
+            return False
+
+
+    def get_student_name(self, obj):
+        first_name = obj.student.user.first_name
+        last_name = obj.student.user.last_name
+        return f"{first_name} {last_name}"
 
 
 class AppUpdateSerializer(serializers.ModelSerializer):
