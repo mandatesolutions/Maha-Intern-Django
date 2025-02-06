@@ -138,7 +138,7 @@ class GetStudentReport(APIView):
     @swagger_auto_schema(tags=['Admin APIs'],operation_description="show organization info for application",operation_summary="show organization info for application")
     def get(self,request,student_id):
         try:
-            report_data = MonthlyReport.objects.filter(application__student__stud_id = student_id)
+            report_data = MonthlyReport.objects.filter(application__student__id = student_id)
         except MonthlyReport.DoesNotExist:
             return Response({"error":"student id not found"})
        
