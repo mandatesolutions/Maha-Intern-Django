@@ -24,14 +24,16 @@ class LoginSerializer(serializers.Serializer):
         password = attrs.get('password')
 
         if not email or not password:
-            raise serializers.ValidationError("email and password are required.")
+             raise serializers.ValidationError(
+                {"message": ["email and password are required."]}
+            )
+
 
         try:
-            
-            user=UserModel.objects.get(email=email)
+            user = UserModel.objects.get(email=email)
         except UserModel.DoesNotExist:
             raise serializers.ValidationError(
-                {"username": ["Invalid email, please try again."]}
+                {"message": ["Invalid username, please try again."]}
             )
         
         # Authenticate user
@@ -39,7 +41,7 @@ class LoginSerializer(serializers.Serializer):
 
         if result is None:
             raise serializers.ValidationError(
-                {"password": ["Invalid password, please try again."]}
+                {"message": ["Invalid password, please try again."]}
             )
         
         # Return user if authentication is successful
