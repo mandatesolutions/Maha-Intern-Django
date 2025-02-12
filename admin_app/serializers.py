@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from core_app.models import *
+from admin_app.models import *
+
 from student_app.models import *
 from organization_app.models import *
 
@@ -23,3 +25,15 @@ class AllOrganizationSerializers(serializers.ModelSerializer):
         model = Organization
         fields = ["id","org_id","company_name","industry_type","company_id_type","company_unique_id","reprsentative_name","district",
                   "taluka","organization_logo","user"]
+        
+
+class DistrictSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = District
+        fields = '__all__'
+
+
+class TalukaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Taluka
+        fields = '__all__'

@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import BasePermission
+from rest_framework import status,permissions
+
 
 from drf_yasg.utils import swagger_auto_schema
 
@@ -11,7 +13,38 @@ from .serializers import *
 from student_app.serializers import *
 from student_app.models import Student
 
+from admin_app.models import *
+from admin_app.serializers import *
+
 # Create your views here.
+
+class DistrictList(APIView):
+    serializer_classes = DistrictSerializer
+    permission_classes = [permissions.AllowAny]
+
+    @swagger_auto_schema(tags=['Organization APIs'],operation_description="All District List",operation_summary="All District List",
+                        )
+
+    def get(self,request):
+        if request.method == 'GET':
+            data = District.objects.all()
+            serializer = self.serializer_classes(data,many=True) 
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class TalukaList(APIView):
+    serializer_classes = TalukaSerializer
+    permission_classes = [permissions.AllowAny]
+
+    @swagger_auto_schema(tags=['Organization APIs'],operation_description="All Taluka List",operation_summary="All Taluka List by District id",
+    )
+
+    def get(self,request,district_id):
+        if request.method == 'GET':
+            data = Taluka.objects.filter(district_id=district_id)
+            serializer = self.serializer_classes(data,many=True) 
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 class RegisterOrganization(APIView):
     serializer_class = OrgUserModelSerializer

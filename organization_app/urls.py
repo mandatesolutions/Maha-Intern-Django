@@ -4,6 +4,8 @@ from django.urls import path, include
 urlpatterns = [
 
     # Internship operations paths
+    path('district_list', views.DistrictList.as_view(), name='district_list'),
+    path('taluka_list/<int:district_id>', views.TalukaList.as_view(), name='taluka_list'),
     path('register-organization',views.RegisterOrganization.as_view(), name='register-organization'),
     path('get-org-profile',views.GetOrgProfile.as_view(), name='get-org-profile'),
     
