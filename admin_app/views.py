@@ -114,7 +114,7 @@ class LatestStudent(APIView):
         
         raw_query = """SELECT u.id,st.id as Student_id,u.first_name,u.last_name,u.email,st.adhar_number,u.date_joined as Registered_Date FROM MahaIntern_DB.Student as st
         Left Join MahaIntern_DB.UserModel as u on st.user_id = u.id
-        ORDER BY u.date_joined DESC LIMIT 10;"""
+        WHERE st.id IS NOT NULL ORDER BY u.date_joined DESC LIMIT 10;"""
 
         student_query=Student.objects.raw(raw_query)
 
