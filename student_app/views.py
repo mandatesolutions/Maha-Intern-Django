@@ -158,7 +158,7 @@ class Applicationsby_status(APIView):
 
     @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get applications of student by Status", operation_summary="Get applications of student by Status = Pending,Shortlisted,Rejected,Selected")
     def get(self, request, stat):
-        applications = Application.objects.filter(student__user=request.user, status=stat)
+        applications = Application.objects.filter(student__user=request.user, status=stat).order_by('-updated_at')
 
         if not applications:
             return Response({"message": "No applications found for this user."}, status=status.HTTP_404_NOT_FOUND)

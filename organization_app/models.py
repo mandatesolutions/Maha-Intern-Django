@@ -92,7 +92,7 @@ class Application(models.Model):
     applied_on = models.DateTimeField(auto_now_add=True)
     resume = models.FileField(upload_to='apps_resumes/',null=True,blank=True)
     status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Shortlisted', 'Shortlisted'), ('Selected', 'Selected'), ('Rejected', 'Rejected')], default='Pending')
-    
+    updated_at = models.DateTimeField(auto_now=True,null=True,blank=True)
     def __str__(self):
         return f"{self.app_id}"
     
