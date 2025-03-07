@@ -23,7 +23,7 @@ class IsAdmin(BasePermission):
 
 
 class Admin_Allstudents(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsAdmin]
     serializer_class = Allstudent_Serializer
 
     @swagger_auto_schema(tags=['Admin APIs'], operation_description="API for Get all Students", operation_summary="Get all Students")
@@ -35,7 +35,7 @@ class Admin_Allstudents(APIView):
 
 class AllOrganization(APIView):
     serializer_classes = AllOrganizationSerializers
-    permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated,IsAdmin]
 
     @swagger_auto_schema(tags=['Admin APIs'],operation_description="show organization all data",operation_summary="show organization all data")
     def get(self,request):
@@ -51,7 +51,7 @@ class AllOrganization(APIView):
 
 class InternshipsByOrgan(APIView):
     serializer_classes = AdminShowInternshipSerializers
-    permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated,IsAdmin]
 
     @swagger_auto_schema(tags=['Admin APIs'],operation_description="show internship all data",operation_summary="show internship all data")
     def get(self,request,organ_id):
@@ -69,7 +69,7 @@ class InternshipsByOrgan(APIView):
 
 class AppsByIntern(APIView):
     serializer_classes = ShowInternApplicationSerializer
-    permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated,IsAdmin]
 
 
     @swagger_auto_schema(tags=['Admin APIs'],operation_description="show applications by Internships data",operation_summary="show applications by Internships data")
@@ -84,7 +84,7 @@ class AppsByIntern(APIView):
 
 class AdminDashboardCounter(APIView):
     serializer_classes = ApplicationSerializer
-    permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated,IsAdmin]
 
     @swagger_auto_schema(tags=['Admin APIs'],operation_description="show applications and Internships counter",operation_summary="show applications and Internships counter")
     def get(self,request):
@@ -103,6 +103,38 @@ class AdminDashboardCounter(APIView):
         
         return Response(response_data,status=status.HTTP_200_OK)
     
+
+
+class LatestStudent(APIView):
+    permission_classes=[IsAuthenticated]
+
+    @swagger_auto_schema(tags=['Admin APIs'],operation_description="Latest registered students at dashboard",operation_summary="Latest registered students at dashboard")
+
+    def get(self,request):
+        
+        raw_query = """SELECT u.id,st.id as Student_id,u.first_name,u.last_name,u.email,st.adhar_number,u.date_joined as Registered_Date FROM MahaIntern_DB.Student as st
+        Left Join MahaIntern_DB.UserModel as u on st.user_id = u.id
+        ORDER BY u.date_joined DESC LIMIT 10;"""
+
+        student_query=Student.objects.raw(raw_query)
+
+        student_data = [
+            {   
+                'User_id': row.id,
+                'Student_id': row.Student_id,
+                'student_name': row.first_name+row.last_name,
+                'email': row.email,
+                'adhar_number': row.adhar_number,
+                'Registered_Date': row.Registered_Date,
+            }
+            for row in student_query
+        ]
+
+        return Response(student_data,status=status.HTTP_200_OK)
+
+
+
+
 class GetStudentInfo(APIView):
     serializer_classes = Allstudent_Serializer
     permission_classes=[IsAuthenticated]
