@@ -41,5 +41,13 @@ class UserModel(AbstractUser):
     def __str__(self):
         return self.email
 
+class Notification(models.Model):
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE)
+    redirect_url = models.CharField(max_length=255, null=True, blank=True)
 
-
+    class Meta:
+        db_table = 'Notification'

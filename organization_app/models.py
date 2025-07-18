@@ -85,13 +85,22 @@ class Internship(models.Model):
         super().save(*args, **kwargs)
     
 # Application model (students applying for internships)
+
+APPLICATION_STATUS_CHOICES = [
+        ('pending', 'pending'),
+        ('shortlisted', 'shortlisted'),
+        ('selected', 'selected'),
+        ('rejected', 'rejected'),
+        ('accepted', 'accepted'),
+        ('declined', 'declined'),
+    ]
 class Application(models.Model):
+    
     app_id = models.CharField(max_length=100, unique=True, editable=False, null=True)
     student = models.ForeignKey('student_app.Student', on_delete=models.CASCADE, related_name='student_applications', blank=True, null=True)  # Student is a User
     internship = models.ForeignKey('organization_app.Internship', on_delete=models.CASCADE,null=True,blank=True)
     applied_on = models.DateTimeField(auto_now_add=True)
-    resume = models.FileField(upload_to='apps_resumes/',null=True,blank=True)
-    status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Shortlisted', 'Shortlisted'), ('Selected', 'Selected'), ('Rejected', 'Rejected')], default='Pending')
+    status = models.CharField(max_length=20, choices=APPLICATION_STATUS_CHOICES, default='pending')
     updated_at = models.DateTimeField(auto_now=True,null=True,blank=True)
     def __str__(self):
         return f"{self.app_id}"
@@ -104,6 +113,57 @@ class Application(models.Model):
         if not self.app_id:
             self.app_id = str(uuid.uuid4()).replace('-', '')
         super().save(*args, **kwargs)
+
+class InterviewDetails(models.Model):
+    interview_id = models.CharField(max_length=100, unique=True, editable=False, null=True)
+    application = models.OneToOneField('Application', on_delete=models.CASCADE, related_name='application_interview')
+    date = models.DateField()
+    time = models.TimeField()
+    mode = models.CharField(max_length=100)  # Online / Offline
+    location = models.TextField(blank=True, null=True)
+    instructions = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'interview_details'
+    
+    def __str__(self):
+        return f"Interview for {self.application}"
+    
+    def save(self, *args, **kwargs):
+        if not self.interview_id:
+            self.interview_id = str(uuid.uuid4()).replace('-', '')
+        super().save(*args, **kwargs)
+
+class OfferDetails(models.Model):
+    offer_id = models.CharField(max_length=100, unique=True, editable=False, null=True)
+    application = models.OneToOneField('Application', on_delete=models.CASCADE, related_name='application_offer')
+    joining_date = models.DateField()
+    offer_letter_file = models.FileField(upload_to='candidate/offers/')
+    package = models.CharField(max_length=100, blank=True, null=True)
+    other_details = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'offer_details'
+        
+    def __str__(self):
+        return f"Offer for {self.application}"
+    
+    def save(self, *args, **kwargs):
+        if not self.offer_id:
+            self.offer_id = str(uuid.uuid4()).replace('-', '')
+        super().save(*args, **kwargs)
+
+class ApplicationStatusHistory(models.Model):
+    application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='status_history')
+    old_status = models.CharField(max_length=20, choices=APPLICATION_STATUS_CHOICES)
+    new_status = models.CharField(max_length=20, choices=APPLICATION_STATUS_CHOICES)
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'application_status_history'
+        
+    def __str__(self):
+        return f'{self.application.app_id}: {self.old_status} → {self.new_status}'
 
 
 class SelectedStudentModel(models.Model):

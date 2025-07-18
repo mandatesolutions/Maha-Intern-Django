@@ -30,7 +30,7 @@ schema_view = get_schema_view(
       default_version='v1',
       description="API list for MahaIntern",
       terms_of_service="https://www.google.com/policies/terms/",
-      contact=openapi.Contact(email="tajjmul@mandates.in"),
+      contact=openapi.Contact(email="faizan@mandates.in"),
       license=openapi.License(name="MIT License"),
    ),
    public=True,
@@ -40,7 +40,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/config/', include('core_app.urls')),
     path('api/student/', include('student_app.urls')),
-     path('api/admin-app/', include('admin_app.urls')),
+    path('api/admin-app/', include('admin_app.urls')),
     
     path('api/organization/', include('organization_app.urls')),
     path('token/refresh/', jwt_views.TokenRefreshView.as_view(), name ='token_refresh'), 

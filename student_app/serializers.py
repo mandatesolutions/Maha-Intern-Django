@@ -2,7 +2,6 @@ from rest_framework import serializers
 from .models import *
 from core_app.models import *
 from organization_app.models import *
-from organization_app.serializers import *
 
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -59,33 +58,75 @@ class InternshipSerializer(serializers.ModelSerializer):
     class Meta:
         model = Internship
         fields = "__all__"
+        read_only_fields = ['company']
         
 
 class Add_ApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Application
-        fields = ['internship', 'resume']
+        fields = ['internship']
+        read_only_fields = ['student','status']
         
-        
-class ApplicationSerializer(serializers.ModelSerializer):
+ 
+class StudentInfoSerializer(serializers.Serializer):
+    stud_id = serializers.CharField()
+    name = serializers.SerializerMethodField()
+    email = serializers.EmailField(source='user.email')
+    
+    def get_name(self, obj):
+        student = obj.user.student
+        return f"{student.user.first_name} {student.user.last_name}"
+
+
+class InternshipInfoSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    company = serializers.CharField(source='company.company_name')
+
+
+class InterviewDetailsSerializer(serializers.ModelSerializer):
+    date = serializers.DateField(format="%Y-%m-%d")
+    time = serializers.TimeField(format="%H:%M")
+
+    class Meta:
+        model = InterviewDetails
+        exclude = ["application"]
+
+
+class OfferLetterSerializer(serializers.ModelSerializer):
+    joining_date = serializers.DateField(format="%Y-%m-%d")
+
+    class Meta:
+        model = OfferDetails
+        exclude = ['application']
+
+
+class ApplicationStatusHistorySerializer(serializers.ModelSerializer):
+    changed_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+
+    class Meta:
+        model = ApplicationStatusHistory
+        exclude = ['application']
+
+
+class ApplicationDetailsSerializer(serializers.ModelSerializer):
+    student = StudentInfoSerializer(read_only=True)
+    internship = InternshipInfoSerializer( read_only=True)
+    interview = InterviewDetailsSerializer(source='application_interview', read_only=True)
+    history = ApplicationStatusHistorySerializer(source='status_history',many=True, read_only=True)
+    offer_details = OfferLetterSerializer(source='application_offer', read_only=True)
+    applied_on = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+
     class Meta:
         model = Application
-        fields = "__all__"
+        fields = [
+            'app_id', 'student', 'internship', 'status', 'applied_on',
+            'interview', 'offer_details', 'history'
+        ]
         
-
-class Org_appliedSerializer(serializers.ModelSerializer):
+        
+class EducationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Organization
-        fields = ["company_name"]
-
-class Internship_appliedSerializer(serializers.ModelSerializer):
-    company = Org_appliedSerializer()
-    class Meta:
-        model = Internship
-        fields = ["intern_id", "title", "description", "location", "duration", "company"]
-
-class Applied_Serializer(serializers.ModelSerializer):
-    internship = Internship_appliedSerializer()
-    class Meta:
-        model = Application
+        model = Education
         fields = "__all__"
+        read_only_fields = ['student']
+        

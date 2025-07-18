@@ -109,26 +109,26 @@ class ApplicationSerializer(serializers.ModelSerializer):
 
 class ShowInternApplicationSerializer(serializers.ModelSerializer):
     student_name = serializers.SerializerMethodField()
-    resume = serializers.SerializerMethodField()
     class Meta:
         model = Application
         fields = "__all__"
 
-    def get_resume(self, obj):
-        if obj.resume:
-            return urljoin(settings.SITE_URL, str(obj.resume.url))
-        return None
     
     def get_student_name(self, obj):
         first_name = obj.student.user.first_name
         last_name = obj.student.user.last_name
         return f"{first_name} {last_name}"
 
+class ApplicationStatusHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApplicationStatusHistory
+        exclude = ['application']
+        
 class ShowAllApplications(serializers.ModelSerializer):
     student_email = serializers.CharField(source='student.user.email', read_only=True)
     student_name = serializers.SerializerMethodField()
-    resume = serializers.SerializerMethodField()
     intern_uid = serializers.CharField(source = 'internship.intern_id',read_only = True)
+    history = serializers.SerializerMethodField()
     class Meta:
         model = Application
         fields = "__all__"
@@ -138,10 +138,10 @@ class ShowAllApplications(serializers.ModelSerializer):
         last_name = obj.student.user.last_name
         return f"{first_name} {last_name}"
     
-    def get_resume(self,obj):
-        if obj.resume:
-            return urljoin(settings.SITE_URL, str(obj.resume.url))
-        return None
+    def get_history(self, obj):
+        history = ApplicationStatusHistory.objects.filter(application=obj)
+        return ApplicationStatusHistorySerializer(history, many=True).data
+  
     
 class ShowSelectedApplications(serializers.ModelSerializer):
     student_email = serializers.CharField(source='student.user.email', read_only=True)
@@ -191,12 +191,6 @@ class AdminShowSelectedApplications(serializers.ModelSerializer):
         first_name = obj.student.user.first_name
         last_name = obj.student.user.last_name
         return f"{first_name} {last_name}"
-
-
-class AppUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Application
-        fields = ['student','internship','status'] # unique id need to pass 
         
 
 class MonthlyReportSerializer(serializers.ModelSerializer):
@@ -224,3 +218,12 @@ class AdminSelectedStudentSerializer(serializers.ModelSerializer):
         last_name = obj.application.student.user.last_name
         return f"{first_name} {last_name}"
     
+class InterviewDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InterviewDetails
+        exclude = ['application']
+        
+class OfferDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OfferDetails
+        exclude = ['application']

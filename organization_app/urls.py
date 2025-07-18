@@ -20,7 +20,9 @@ urlpatterns = [
     # All Applications for organization
 
     path('org-all-apps/<str:intern_id>',views.OrganizationAllApps.as_view(), name='register-organization'),
-    path('update-apps-status',views.UpdateAppsStatus.as_view(), name='update-apps-status'),
+    path('application/<str:app_id>/status/<str:app_status>',views.UpdateAppsStatus.as_view(), name='update-apps-status'),
+    path('application/<str:app_id>/interview/', views.Org_InterviewDetailsView.as_view(), name='application-interview'),
+    path('application/<str:app_id>/offer/', views.Org_OfferDetailsView.as_view(), name='application-interview'),
 
     path('get_student_profile/<int:student_id>',views.GetStudentProfile.as_view(), name='get_student_profile'),
 

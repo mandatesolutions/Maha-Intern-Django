@@ -1,15 +1,19 @@
 from django.shortcuts import render
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.permissions import BasePermission
-from rest_framework import status,permissions
-
+from rest_framework.permissions import IsAuthenticated, BasePermission
+from rest_framework.generics import *
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import parser_classes
 
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
+from .models import *
 from .serializers import *
+
 from student_app.serializers import *
 from student_app.models import Student
 
@@ -20,7 +24,6 @@ from admin_app.serializers import *
 
 class DistrictList(APIView):
     serializer_classes = DistrictSerializer
-    permission_classes = [permissions.AllowAny]
 
     @swagger_auto_schema(tags=['Organization APIs'],operation_description="All District List",operation_summary="All District List",
                         )
@@ -34,7 +37,6 @@ class DistrictList(APIView):
 
 class TalukaList(APIView):
     serializer_classes = TalukaSerializer
-    permission_classes = [permissions.AllowAny]
 
     @swagger_auto_schema(tags=['Organization APIs'],operation_description="All Taluka List",operation_summary="All Taluka List by District id",
     )
@@ -100,10 +102,10 @@ class Add_Internship(APIView):
             return Response({"error": "Organization not found for this user."}, status=status.HTTP_404_NOT_FOUND)
         
         data=request.data
-        data['company'] = org.id
         
         serializer = self.serializer_class(data=data)
         if serializer.is_valid():
+            serializer.validated_data['company'] = org
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -191,28 +193,39 @@ class OrganizationAllApps(APIView):
 
 class UpdateAppsStatus(APIView):
     permission_classes=[IsAuthenticated]
-    serializer_class = AppUpdateSerializer
 
-    @swagger_auto_schema(tags=['Organization APIs'],operation_description="update status for application by organization",operation_summary="update status for application by organization"
-                         ,request_body=serializer_class)
-    
-    def put(self,request):
-        intern_id = request.data.get('internship')
-        student_id = request.data.get('student')
-    
-        try:
-            app_data = Application.objects.get(internship_id=intern_id, student_id=student_id)
-        except Application.DoesNotExist:
-            return Response({"detail": "Application not found."}, status=status.HTTP_404_NOT_FOUND)
-
-   
-        serializer = self.serializer_class(app_data, data=request.data, partial=True)  # partial=True allows partial updates
-    
-        if serializer.is_valid():
-            serializer.save()  # Save the updated data
-            return Response(serializer.data, status=status.HTTP_200_OK)
+    @swagger_auto_schema(
+        tags=['Organization APIs'],
+        operation_description="update status for application by organization",
+        operation_summary="update status for application by organization",
+        manual_parameters=[
+            openapi.Parameter(
+                "app_status",
+                openapi.IN_PATH,
+                type=openapi.TYPE_STRING,
+                enum=["shortlisted", "selected", "rejected"],
+            )
+        ]
+    )
+    def put(self,request,app_id,app_status):
+        
+        if app_status not in ["shortlisted", "rejected", "selected"]:
+            return Response({"detail": "Invalid status. Status must be 'shortlisted', 'selected', or 'rejected'."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        application = Application.objects.filter(app_id=app_id).first()
+        if application:
+            old_status = application.status
+            application.status = app_status
+            application.save()
+            ApplicationStatusHistory.objects.create(application=application, old_status=old_status, new_status=app_status)
+            Notification.objects.create(
+                title="Application Status Updated",
+                message=f"Your application status for {application.internship.title} has been updated to {app_status}.",
+                user=application.student.user
+            )
+            return Response({"success": "Application status updated successfully."}, status=status.HTTP_200_OK)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Application not found."}, status=status.HTTP_404_NOT_FOUND)
         
 
 class GetStudentProfile(APIView):
@@ -402,8 +415,138 @@ class AllSelectedApps(APIView):
         serializer = self.serializer_classes(intern_apps,many=True)
         return Response(serializer.data,status=status.HTTP_200_OK)
 
-
-
-
+class Org_InterviewDetailsView(APIView):
+    permission_classes = [IsAuthenticated,IsOrg]
+    serializer_class = InterviewDetailsSerializer
     
+    def get_application(self, app_id):
+        return get_object_or_404(Application, app_id=app_id)
 
+    def get_interview(self, application):
+        return InterviewDetails.objects.filter(application=application).first()
+    
+    @swagger_auto_schema(tags=['Organization APIs'],request_body=serializer_class,operation_description="Add Interview Details API", operation_summary="Add Interview Details API")
+    def post(self, request, app_id):
+        application = Application.objects.filter(app_id=app_id).first()
+        
+        if application.status != 'selected':
+            return Response({"detail": "Application is not selected."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if self.get_interview(application):
+            return Response({"detail": "Interview details already exist for this application."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.serializer_class(data=request.data)
+        
+        if serializer.is_valid():
+            serializer.save(application=application)
+            Notification.objects.create(
+                title="Interview Scheduled",
+                message=f"Your interview has been scheduled for {application.internship.title}.",
+                user=application.student.user
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @swagger_auto_schema(tags=['Organization APIs'],operation_description="Get Interview Details API", operation_summary="Get Interview Details API")
+    def get(self, request, app_id):
+        application = self.get_application(app_id)
+        interview = self.get_interview(application)
+        
+        if not interview:
+            return Response({"detail": "Interview details not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = self.serializer_class(interview)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @swagger_auto_schema(tags=['Organization APIs'],request_body=serializer_class,operation_description="Update Interview Details API", operation_summary="Update Interview Details API")
+    def put(self, request, app_id):
+        application = self.get_application(app_id)
+        interview = self.get_interview(application)
+        
+        if not interview:
+            return Response({"detail": "Interview details not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = self.serializer_class(interview, data=request.data)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class Org_OfferDetailsView(APIView):
+    permission_classes = [IsAuthenticated, IsOrg]
+    serializer_class = OfferDetailsSerializer
+
+    def get_application(self, app_id):
+        return get_object_or_404(Application, app_id=app_id)
+
+    def get_offer(self, application):
+        return OfferDetails.objects.filter(application=application).first()
+
+    @swagger_auto_schema(
+        tags=['Organization APIs'],
+        request_body=serializer_class,
+        operation_description="Add Offer Details API",
+        operation_summary="Add Offer Details API (use FormData)"
+    )
+    def post(self, request, app_id):
+        application = self.get_application(app_id)
+
+        if application.status != 'selected':
+            return Response({"detail": "Application is not selected."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if self.get_offer(application):
+            return Response({"detail": "Offer details already exist for this application."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save(application=application)
+            Notification.objects.create(
+                title="Offer recieved",
+                message=f"Your Offer has been recieved, for {application.internship.title}.",
+                user=application.student.user
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        tags=['Organization APIs'],
+        operation_description="Get Offer Details API",
+        operation_summary="Get Offer Details API"
+    )
+    def get(self, request, app_id):
+        application = self.get_application(app_id)
+        offer = self.get_offer(application)
+        
+        if not offer:
+            return Response({"detail": "Offer details not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.serializer_class(offer)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(
+        tags=['Organization APIs'],
+        request_body=serializer_class,
+        operation_description="Update Offer Details API",
+        operation_summary="Update Offer Details API (User FormData)"
+    )
+    def put(self, request, app_id):
+        application = self.get_application(app_id)
+        offer = self.get_offer(application)
+        
+        if not offer:
+            return Response({"detail": "Offer details not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.serializer_class(offer, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            Notification.objects.create(
+                title="Offer details Updated",
+                message=f"Your Offer details has been updated, for {application.internship.title}.",
+                user=application.student.user
+            )
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
