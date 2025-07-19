@@ -1,5 +1,7 @@
 from rest_framework import serializers
+
 from core_app.models import *
+
 from admin_app.models import *
 
 from student_app.models import *
@@ -36,4 +38,9 @@ class DistrictSerializer(serializers.ModelSerializer):
 class TalukaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Taluka
+        fields = '__all__'
+        
+class FeedbackQuestionsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FeedbackQuestion
         fields = '__all__'

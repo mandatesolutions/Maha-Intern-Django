@@ -35,10 +35,23 @@ urlpatterns = [
 
     path('selected-student-save', views.SelectedStudent.as_view(), name='selected-student-save'),
     path('get-all-selected', views.GetAllSelected.as_view(), name='get-all-selected'),
-    path('get-one-selected/<int:selected_id>', views.GetOneSelected.as_view(), name='get-one-selected'),
-    path('update-selected-student/<int:selected_id>', views.UpdateSelectedStudent.as_view(), name='update_selected_student'), 
-    path('delete-selected-student/<int:selected_id>', views.DeleteSelectedStudent.as_view(), name='delete_selected_student'),
-    path('all-selected-applications',views.AllSelectedApps.as_view(),name='all-selected-applications')
+    path('get-one-selected/<str:selected_id>', views.GetOneSelected.as_view(), name='get-one-selected'),
+    path('update-selected-student/<str:selected_id>', views.UpdateSelectedStudent.as_view(), name='update_selected_student'), 
+    path('delete-selected-student/<str:selected_id>', views.DeleteSelectedStudent.as_view(), name='delete_selected_student'),
+    path('all-selected-applications',views.AllSelectedApps.as_view(),name='all-selected-applications'),
+    
+    path('review-student/<str:stud_id>/', views.OrganizationReviewStudent.as_view()),
+    path('given-reviews/', views.OrganizationGivenReviews.as_view()),
+    path('received-reviews/', views.OrganizationReceivedReviews.as_view()),
+    path('student-reviews/', views.OrganizationViewStudentReviews.as_view()),
+    path('student-reviews/<str:stud_id>/', views.OrganizationViewStudentReviews.as_view()),
+    
+    
+    path('give-feedback/<str:stud_id>', views.OrganizationGiveFeedbackToStudent.as_view(), name='company-give-feedback'),
+    path('feedbacks/given/', views.OrganizationFeedbacksGiven.as_view(), name='company-feedbacks-given'),
+    path('feedbacks/received/', views.FeedbacksGivenOnOrganization.as_view(), name='feedbacks-on-company'),
+    path('feedbacks/students/', views.FeedbacksOfStudentForOrganization.as_view(), name='feedbacks-of-all-students'),
+    path('feedbacks/students/<str:stud_id>/', views.FeedbacksOfStudentForOrganization.as_view(), name='feedbacks-of-specific-student'),
 
 
 ]

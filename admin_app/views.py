@@ -1,18 +1,24 @@
 from django.shortcuts import render
+from django.http import Http404
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.http import Http404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import BasePermission
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.exceptions import NotFound
+
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
 from .models import *
+from .serializers import *
+
 from core_app.models import *
 from core_app.serializers import *
+
 from organization_app.models import *
-from .serializers import *
 from organization_app.serializers import *
 
 
@@ -206,7 +212,72 @@ class OrgSelectedApps(APIView):
         serializer=self.serializer_class(applications,many=True)
 
         return Response(serializer.data,status=status.HTTP_200_OK)
+    
+class Admin_FeedbackQuestionsView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = FeedbackQuestionsSerializer
+    
+    @swagger_auto_schema(
+        tags=['Admin APIs'],
+        operation_description="show feedback questions",
+        operation_summary="show feedback questions",
+        manual_parameters=[
+            openapi.Parameter(
+                'feedback_for',
+                openapi.IN_PATH,
+                description="Feedback target (student or organization)",
+                type=openapi.TYPE_STRING,
+                enum=['student', 'organization']
+            )
+        ]
+    )
+    def get(self, request, feedback_for):
+        
+        if feedback_for not in ['student', 'organization']:
+            return Response({"detail": "Invalid feedback target."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        feedback_questions = FeedbackQuestion.objects.filter(feedback_for=feedback_for)
+        serializer = self.serializer_class(feedback_questions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+    @swagger_auto_schema(
+        tags=['Admin APIs'],
+        operation_description="Create feedback questions (accepts list of strings)",
+        operation_summary="Create feedback questions",
+        manual_parameters=[
+            openapi.Parameter(
+                'feedback_for',
+                openapi.IN_PATH,
+                description="Feedback target (student or organization)",
+                type=openapi.TYPE_STRING,
+                enum=['student', 'organization']
+            )
+        ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_ARRAY,
+            items=openapi.Items(type=openapi.TYPE_STRING),
+            description="List of question texts"
+        )
+    )
+    def post(self, request, feedback_for):
+        if feedback_for not in ['student', 'organization']:
+            return Response({"detail": "Invalid feedback target."}, status=status.HTTP_400_BAD_REQUEST)
 
+        questions = request.data
+        if not isinstance(questions, list) or not all(isinstance(q, str) for q in questions):
+            return Response({"detail": "Request body must be a list of strings."}, status=status.HTTP_400_BAD_REQUEST)
+
+        response = []
+        for q in questions:
+            obj = FeedbackQuestion.objects.create(question_text=q, feedback_for=feedback_for)
+            response.append({
+                "question_id": obj.question_id,
+                "question_text": obj.question_text,
+                "feedback_for": obj.feedback_for
+            })
+
+        return Response(response, status=status.HTTP_201_CREATED)
 
 
     

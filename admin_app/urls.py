@@ -16,14 +16,7 @@ urlpatterns = [
     path('get-student-report/<str:student_id>',views.GetStudentReport.as_view(), name='get-student-report'),
 
     path('get-joined-students/<str:organ_uid>',views.GetJoinedStudents.as_view(),name='get-joined-students'),
-    path('organization-selected-apps/<str:organ_uid>',views.OrgSelectedApps.as_view(),name='organization-selected-apps')
+    path('organization-selected-apps/<str:organ_uid>',views.OrgSelectedApps.as_view(),name='organization-selected-apps'),
 
-
-
-
-
-
-
-
-    
+    path('feedback-questions/<str:feedback_for>', views.Admin_FeedbackQuestionsView.as_view(), name='feedback-questions'),      
 ]

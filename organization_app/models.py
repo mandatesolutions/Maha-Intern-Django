@@ -139,7 +139,6 @@ class OfferDetails(models.Model):
     application = models.OneToOneField('Application', on_delete=models.CASCADE, related_name='application_offer')
     joining_date = models.DateField()
     offer_letter_file = models.FileField(upload_to='candidate/offers/')
-    package = models.CharField(max_length=100, blank=True, null=True)
     other_details = models.TextField(blank=True, null=True)
 
     class Meta:
@@ -167,13 +166,22 @@ class ApplicationStatusHistory(models.Model):
 
 
 class SelectedStudentModel(models.Model):
-    application = models.ForeignKey('organization_app.Application', on_delete=models.CASCADE, related_name='selected_student')
+    selected_student_id = models.CharField(max_length=100, unique=True, editable=False, null=True)    
+    application = models.OneToOneField('organization_app.Application', on_delete=models.CASCADE, related_name='selected_student')
     joining_date = models.DateField(null=True,blank=True)
-    status = models.CharField(max_length=20, choices=[('Joined', 'Joined'), ('Working', 'Working'), ('Completed', 'Completed')], default='Joined')
+    status = models.CharField(max_length=20, choices=[('Joined', 'Joined'), ('Completed', 'Completed')], default='Joined')
 
     class Meta:
         app_label = 'organization_app'
         db_table = 'SelectedStudentModel'
+        
+    def __str__(self):
+        return f"{self.selected_student_id}"
+    
+    def save(self, *args, **kwargs):
+        if not self.selected_student_id:
+            self.selected_student_id = str(uuid.uuid4()).replace('-', '')
+        super().save(*args, **kwargs)
 
 
 

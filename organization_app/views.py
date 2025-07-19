@@ -20,6 +20,8 @@ from student_app.models import Student
 from admin_app.models import *
 from admin_app.serializers import *
 
+from core_app.serializers import *
+
 # Create your views here.
 
 class DistrictList(APIView):
@@ -207,25 +209,29 @@ class UpdateAppsStatus(APIView):
             )
         ]
     )
-    def put(self,request,app_id,app_status):
+    def patch(self,request,app_id,app_status):
         
         if app_status not in ["shortlisted", "rejected", "selected"]:
             return Response({"detail": "Invalid status. Status must be 'shortlisted', 'selected', or 'rejected'."}, status=status.HTTP_400_BAD_REQUEST)
         
         application = Application.objects.filter(app_id=app_id).first()
-        if application:
-            old_status = application.status
-            application.status = app_status
-            application.save()
-            ApplicationStatusHistory.objects.create(application=application, old_status=old_status, new_status=app_status)
-            Notification.objects.create(
-                title="Application Status Updated",
-                message=f"Your application status for {application.internship.title} has been updated to {app_status}.",
-                user=application.student.user
-            )
-            return Response({"success": "Application status updated successfully."}, status=status.HTTP_200_OK)
-        else:
+        if not application:
             return Response({"detail": "Application not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        old_status = application.status
+        application.status = app_status
+        application.save()
+        ApplicationStatusHistory.objects.create(application=application, old_status=old_status, new_status=app_status)
+        Notification.objects.create(
+            title="Application Status Updated",
+            message=f"Your application status for {application.internship.title} has been updated to {app_status}.",
+            user=application.student.user
+        )
+        
+        if app_status == "selected":
+            SelectedStudentModel.objects.create(application=application)
+            
+        return Response({"success": "Application status updated successfully."}, status=status.HTTP_200_OK)        
         
 
 class GetStudentProfile(APIView):
@@ -354,7 +360,7 @@ class GetOneSelected(APIView):
     @swagger_auto_schema(tags=['Organization Selected-Student'],operation_description="One Selected Student API by organization", operation_summary="One Selected Student API by organization")
     def get(self,request,selected_id):
         # Get selected students who have been linked to these applications
-        selected_students = SelectedStudentModel.objects.get(id=selected_id)
+        selected_students = SelectedStudentModel.objects.get(selected_student_id=selected_id)
 
         # Serialize the selected students data
         serializer = SelectedStudentSerializer(selected_students)
@@ -374,7 +380,7 @@ class UpdateSelectedStudent(APIView):
     def put(self, request, selected_id):
         try:
             # Find the student by primary key
-            selected_student = SelectedStudentModel.objects.get(id=selected_id)
+            selected_student = SelectedStudentModel.objects.get(selected_student_id=selected_id)
         except SelectedStudent.DoesNotExist:
             return Response({"detail": "Selected student not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -395,7 +401,7 @@ class DeleteSelectedStudent(APIView):
     def delete(self, request, selected_id):
         try:
             # Find the student by primary key
-            selected_student = SelectedStudentModel.objects.get(id=selected_id)
+            selected_student = SelectedStudentModel.objects.get(selected_student_id=selected_id)
         except SelectedStudent.DoesNotExist:
             return Response({"detail": "Selected student not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -505,10 +511,13 @@ class Org_OfferDetailsView(APIView):
         if serializer.is_valid():
             serializer.save(application=application)
             Notification.objects.create(
-                title="Offer recieved",
-                message=f"Your Offer has been recieved, for {application.internship.title}.",
+                title="Offer added",
+                message=f"Your Offer has been added, for {application.internship.title}.",
                 user=application.student.user
             )
+            selected_student = SelectedStudentModel.objects.get(application=application)
+            selected_student.joining_date = serializer.validated_data['joining_date']
+            selected_student.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -548,5 +557,173 @@ class Org_OfferDetailsView(APIView):
                 message=f"Your Offer details has been updated, for {application.internship.title}.",
                 user=application.student.user
             )
+            
+            selected_student = SelectedStudentModel.objects.get(application=application)
+            selected_student.joining_date = serializer.validated_data['joining_date']
+            selected_student.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Organization Reviewing Student
+# 1. Organization Reviews Student
+class OrganizationReviewStudent(APIView):
+    permission_classes = [IsAuthenticated, IsOrg]
+    serializer_class = ReviewSerializer  # For response
+
+    @swagger_auto_schema(
+        tags=['Organization APIs'],
+        request_body=serializer_class,
+        operation_description="Organization post review on student",
+        operation_summary="Post Review on student"
+    )
+    def post(self, request, stud_id):
+        try:
+            student = Student.objects.get(stud_id=stud_id)
+            organization = request.user.organization
+        except Student.DoesNotExist:
+            return Response({'detail': 'Student not found'}, status=404)
+
+        data = {
+            'reviewer_type': 'organization',
+            'reviewer_organization': organization,
+            'reviewed_student': student,
+            'rating': request.data.get('rating'),
+            'comment': request.data.get('comment')
+        }
+
+        review = Review.objects.create(**data)
+        serializer = self.serializer_class(review)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+# 2. Organization Given reviews by self
+class OrganizationGivenReviews(ListAPIView):
+    permission_classes = [IsAuthenticated, IsOrg]
+    serializer_class = Organization_GivenReviewsSerializer
+
+    def get_queryset(self):
+        return Review.objects.filter(reviewer_organization=self.request.user.organization)
+
+    @swagger_auto_schema(
+        tags=['Organization APIs'],
+        operation_description="Get reviews given by organization",
+        operation_summary="Organization's given reviews"
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+# 3. Organization Received reviews from Student
+class OrganizationReceivedReviews(ListAPIView):
+    permission_classes = [IsAuthenticated, IsOrg]
+    serializer_class = Student_GivenReviewsSerializer
+
+    def get_queryset(self):
+        return Review.objects.filter(reviewed_organization=self.request.user.organization)
+
+    @swagger_auto_schema(
+        tags=['Organization APIs'],
+        operation_description="Get reviews received by organization",
+        operation_summary="Organization's received reviews"
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
+# 4. Organization sees Student reviews
+class OrganizationViewStudentReviews(ListAPIView):
+    permission_classes = [IsAuthenticated, IsOrg]
+    serializer_class = Organization_GivenReviewsSerializer
+
+    def get_queryset(self):
+        stud_id = self.kwargs.get('stud_id')
+        if stud_id:
+            try:
+                student = Student.objects.get(stud_id=stud_id)
+                return Review.objects.filter(reviewed_student=student)
+            except Student.DoesNotExist:
+                return Review.objects.none()
+        return Review.objects.filter(reviewed_student__isnull=False)
+
+    @swagger_auto_schema(
+        tags=['Organization APIs'],
+        operation_description="Get reviews of a student",
+        operation_summary="Student reviews"
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
+# Feedback Reviews
+# 1. Organization gives feedback on Student
+class OrganizationGiveFeedbackToStudent(APIView):
+    permission_classes = [IsAuthenticated, IsOrg]
+    serializer_class = FeedbackResponseSerializer
+
+    @swagger_auto_schema(
+        tags=['Organization APIs'],
+        request_body=serializer_class,
+        operation_description="Give feedback to student",
+        operation_summary="Organization gives feedback to student"
+    )
+    def post(self, request, stud_id):
+        serializer = self.serializer_class(
+            data=request.data,
+            context={'request': request, 'recipient_id': stud_id}
+        )
+        if serializer.is_valid():
+            if serializer.validated_data.get('feedback_type') != 'organisation_to_student':
+                return Response({"error": "Invalid feedback_type"}, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# 2. Organization sees feedbacks given by them
+class OrganizationFeedbacksGiven(APIView):
+    permission_classes = [IsAuthenticated, IsOrg]
+
+    @swagger_auto_schema(
+        tags=['Organization APIs'],
+        operation_description="Get feedbacks given by organization",
+        operation_summary="Organization's given feedbacks"
+    )
+    def get(self, request):
+        org = request.user.organization
+        feedbacks = FeedbackResponse.objects.filter(sender_organization=org, feedback_type='organisation_to_student')
+        serializer = FeedbackResponseSerializer(feedbacks, many=True)
+        return Response(serializer.data)
+
+# 3. Organization sees feedbacks received from Students
+class FeedbacksGivenOnOrganization(APIView):
+    permission_classes = [IsAuthenticated, IsOrg]
+
+    @swagger_auto_schema(
+        tags=['Organization APIs'],
+        operation_description="Get feedbacks given on organization",
+        operation_summary="Feedbacks received by organization"
+    )
+    def get(self, request):
+        org = request.user.organization
+        feedbacks = FeedbackResponse.objects.filter(recipient_organization=org, feedback_type='student_to_organisation')
+        serializer = FeedbackResponseSerializer(feedbacks, many=True)
+        return Response(serializer.data)
+    
+# 4. Organization sees feedbacks of Student(s)
+class FeedbacksOfStudentForOrganization(APIView):
+    permission_classes = [IsAuthenticated, IsOrg]
+
+    @swagger_auto_schema(
+        tags=['Organization APIs'],
+        operation_description="Get feedbacks of student(s)",
+        operation_summary="Feedbacks given to student(s)"
+    )
+    def get(self, request, stud_id=None):
+        if stud_id:
+            try:
+                student = Student.objects.get(stud_id=stud_id)
+                feedbacks = FeedbackResponse.objects.filter(recipient_student=student, feedback_type='organisation_to_student')
+            except Student.DoesNotExist:
+                return Response({'detail': 'Student not found'}, status=404)
+        else:
+            feedbacks = FeedbackResponse.objects.filter(feedback_type='organisation_to_student')
+
+        serializer = FeedbackResponseSerializer(feedbacks, many=True)
+        return Response(serializer.data)
+

@@ -7,10 +7,12 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
 
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
-from .serializers import LoginSerializer,UserSerialiazer
+from .serializers import *
 from .models import *
 
 import math
@@ -34,7 +36,7 @@ class LoginView(APIView):
     permission_classes = [permissions.AllowAny]  
     serializer_class = LoginSerializer
 
-    @swagger_auto_schema(tags=['Config APIs'], operation_description="Api for Login user", operation_summary="Api for Login user",request_body=serializer_class)
+    @swagger_auto_schema(tags=['Core APIs'], operation_description="Api for Login user", operation_summary="Api for Login user",request_body=serializer_class)
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
 
@@ -99,3 +101,37 @@ class CustomSearchFilter(SearchFilter):
             conditions &= or_query
 
         return queryset.filter(conditions).distinct()
+
+class FeedbackQuestionListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        tags=['Core APIs'],
+        operation_description="Get Feedback Questions",
+        operation_summary="Get Feedback Questions",
+        manual_parameters=[
+            openapi.Parameter(
+                'feedback_for',
+                openapi.IN_QUERY,
+                description="Feedback target (candidate or company)",
+                type=openapi.TYPE_STRING,
+                enum=['candidate', 'company']
+            )
+        ]
+    )
+    def get(self, request, feedback_for):
+        if feedback_for not in ['candidate', 'company']:
+            return Response({"detail": "Invalid feedback target."}, status=status.HTTP_400_BAD_REQUEST)
+        questions = FeedbackQuestion.objects.filter(feedback_for=feedback_for)
+        return Response([{"id": q.question_id, "question": q.question_text} for q in questions])
+
+class GetAllNotifications(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = NotificationSerializer
+    
+    @swagger_auto_schema(tags=['Core APIs'], operation_description="Get All Notifications",operation_summary="Get All Notifications",)
+    def get(self, request):
+        notifications = Notification.objects.filter(user=request.user)
+        serializer = self.serializer_class(notifications, many=True)
+        return Response(serializer.data)
+    
