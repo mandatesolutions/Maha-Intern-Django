@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import Http404
+from django.db.utils import IntegrityError
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -20,6 +21,8 @@ from core_app.views import CustomSearchFilter, CustomPaginator
 from organization_app.models import *
 from .serializers import *
 from organization_app.serializers import *
+
+from datetime import date
 
 
 # Create your views here.
@@ -378,15 +381,20 @@ class StudentGiveFeedback(APIView):
         operation_summary="Student gives feedback to Organization"
     )
     def post(self, request, org_id):
+        data = request.data
         serializer = self.serializer_class(
-            data=request.data,
-            context={'request': request, 'recipient_id': org_id}
+            data=data,
+            context={'request': request, 'recipient_id': org_id,'feedback_type': 'student_to_organisation'}
         )
         if serializer.is_valid():
-            if serializer.validated_data.get('feedback_type') != 'student_to_organisation':
-                return Response({"error": "Invalid feedback_type"}, status=status.HTTP_400_BAD_REQUEST)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            try:
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except IntegrityError as e:
+                return Response(
+                    {"detail": "Feedback has already been submitted for this organization for this month."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # 2. Student sees feedback given by self
@@ -443,3 +451,95 @@ class FeedbacksForOrganization(APIView):
 
         serializer = self.serializer_class(feedbacks, many=True)
         return Response(serializer.data)
+
+class ListMonthlyReview(ListAPIView):
+    permission_classes=[IsAuthenticated, IsStudent]
+    serializer_class = MonthlyReviewStudentToOrganizationSerializer
+    
+    def get_queryset(self):
+        org_id = self.request.query_params.get('org_id')
+        monthly_reviews = MonthlyReviewStudentToOrganization.objects.filter(student__user=self.request.user)
+        if org_id:
+            monthly_reviews = monthly_reviews.filter(organization__org_id=org_id) 
+        return monthly_reviews
+    
+    @swagger_auto_schema(
+        tags=['Student APIs'], 
+        operation_description="API for Get Month Report", 
+        operation_summary="Get Month Report",
+        manual_parameters=[
+            openapi.Parameter("org_id", openapi.IN_QUERY, type=openapi.TYPE_STRING, )
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+class CreateMonthlyReview(APIView):
+    permission_classes=[IsAuthenticated, IsStudent]
+    serializer_class = MonthlyReviewStudentToOrganizationSerializer
+
+    @swagger_auto_schema(tags=['Student APIs'], request_body=serializer_class, operation_description="API for Adding Month Report to selected student", operation_summary="Add Month Report to Selected Student")
+    def post(self, request, org_id):
+        organization = Organization.objects.filter(org_id=org_id).first()
+        if not organization:
+            return Response({"detail": "organization not found."}, status=status.HTTP_404_NOT_FOUND)
+        data = request.data
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid():
+            serializer.validated_data['student'] = request.user.student
+            serializer.validated_data['organization'] = organization
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class MonthlyReviewView(RetrieveDestroyAPIView):
+    permission_classes=[IsAuthenticated]
+    serializer_class = MonthlyReviewStudentToOrganizationSerializer
+    lookup_field = 'review_id'
+    
+    def get_queryset(self):
+        return MonthlyReviewStudentToOrganization.objects.filter(student__user=self.request.user)
+    
+    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get Month Report", operation_summary="Get Month Report")
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
+    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Delete Month Report", operation_summary="Delete Month Report")
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs)
+    
+    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Update Month Report", operation_summary="Update Month Report")
+    def put(self, request, review_id):
+        review_id = MonthlyReviewStudentToOrganization.objects.filter(review_id=review_id).first()
+        
+        if not review_id:
+            return Response({"detail": "Review not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = self.serializer_class(review_id, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    
+class RecievedMonthlyReviewView(ListAPIView):
+    permission_classes=[IsAuthenticated, IsStudent]
+    serializer_class = MonthlyReviewOrganizationToStudentSerializer
+    
+    def get_queryset(self):
+        org_id = self.request.query_params.get('org_id')
+        monthly_reviews = MonthlyReviewOrganizationToStudent.objects.filter(student__user=self.request.user)
+        if org_id:    
+            monthly_reviews = monthly_reviews.objects.filter(organization__org_id=org_id)
+        return monthly_reviews
+    
+    @swagger_auto_schema(
+        tags=['Student APIs'], 
+        operation_description="API for Get Month Report", 
+        operation_summary="Get Month Report",
+        manual_parameters=[
+            openapi.Parameter("org_id", openapi.IN_QUERY, type=openapi.TYPE_STRING, )
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)

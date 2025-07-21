@@ -14,6 +14,11 @@ urlpatterns = [
     path('internship-apply/<str:intern_id>', views.Student_Internshipapply.as_view(), name='internship-apply'),
     path('applications/', views.Student_Applications.as_view(), name='user-applications'),
     
+    path('monthreports/', views.ListMonthlyReview.as_view(), name='monthreport'),
+    path('monthreports/<str:org_id>', views.CreateMonthlyReview.as_view(), name='add-monthreport'),
+    path('monthreport/<str:review_id>', views.MonthlyReviewView.as_view(), name='monthreport'),
+    path('received-monthlyreports/', views.RecievedMonthlyReviewView.as_view(), name='received-monthlyreports'),
+    
     path('review-organization/<str:org_id>/', views.StudentReviewOrganization.as_view()),
     path('given-reviews/', views.StudentGivenReviews.as_view()),
     path('received-reviews/', views.StudentReceivedReviews.as_view()),

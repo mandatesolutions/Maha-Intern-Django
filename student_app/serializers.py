@@ -130,3 +130,19 @@ class EducationSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ['student']
         
+class MonthlyReviewStudentToOrganizationSerializer(serializers.ModelSerializer):
+    organization = serializers.SerializerMethodField()
+    student = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
+    class Meta:
+        model = MonthlyReviewStudentToOrganization
+        fields = '__all__'
+        read_only_fields = ['organization', 'student', 'year']
+
+    def get_organization(self, obj):
+        org = obj.organization
+        return {'org_id': org.org_id, 'company_name': org.company_name}
+    
+    def get_student(self, obj):
+        student = obj.student
+        return {'stud_id': student.stud_id, 'name': f"{student.user.first_name} {student.user.last_name}"}

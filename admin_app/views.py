@@ -170,14 +170,14 @@ class GetOrganInfo(APIView):
         return Response(serializer.data,status=status.HTTP_200_OK)
     
 class GetStudentReport(APIView):
-    serializer_classes = MonthlyReportSerializer
+    serializer_classes = MonthlyReviewOrganizationToStudentSerializer
     permission_classes=[IsAuthenticated]
 
     @swagger_auto_schema(tags=['Admin APIs'],operation_description="show organization info for application",operation_summary="show organization info for application")
     def get(self,request,student_id):
         try:
-            report_data = MonthlyReport.objects.filter(application__student__id = student_id)
-        except MonthlyReport.DoesNotExist:
+            report_data = MonthlyReviewOrganizationToStudent.objects.filter(application__student__id = student_id)
+        except MonthlyReviewOrganizationToStudent.DoesNotExist:
             return Response({"error":"student id not found"})
        
         serializer = self.serializer_classes(report_data,many=True)

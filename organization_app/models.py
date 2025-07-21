@@ -1,6 +1,9 @@
 from django.db import models
 from core_app.models import UserModel
+from datetime import date
 import uuid
+
+current_year = date.today().year
 
 # # Create your models here.
 
@@ -185,24 +188,45 @@ class SelectedStudentModel(models.Model):
 
 
 
-class MonthlyReport(models.Model):
-    report_id = models.CharField(max_length=50, unique=True, editable=False, null=True)
-    application = models.ForeignKey('organization_app.Application', on_delete=models.CASCADE, related_name='monthly_reports')
-    month = models.CharField(max_length=50)  # This could be month
-    year = models.IntegerField()  # To capture the year 
-    report_content = models.TextField(null=True, blank=True)  # The content of the report
-    feedback = models.TextField(null=True, blank=True)  # Feedback from the company/organization
-    report_file = models.FileField(upload_to='monthly_reports/', null=True, blank=True)
-    reported_on = models.DateTimeField(auto_now_add=True)
+class MonthlyReviewOrganizationToStudent(models.Model):
+    
+    MONTHS = [
+        ('January', 'January'),
+        ('February', 'February'),
+        ('March', 'March'),
+        ('April', 'April'),
+        ('May', 'May'),
+        ('June', 'June'),
+        ('July', 'July'),
+        ('August', 'August'),
+        ('September', 'September'),
+        ('October', 'October'),
+        ('November', 'November'),
+        ('December', 'December'),
+    ]
+    
+    review_id = models.CharField(max_length=50, unique=True, editable=False, null=True)
+    organization = models.ForeignKey(
+        'organization_app.Organization',
+        on_delete=models.CASCADE,
+        related_name='monthly_reviews_given_to_students'
+    )
+    student = models.ForeignKey(
+        'student_app.Student',
+        on_delete=models.CASCADE,
+        related_name='monthly_reviews_received_from_organization'
+    )
+    month = models.CharField(max_length=50, choices=MONTHS)
+    year = models.IntegerField(auto_created=True, default=current_year)
+    review_content = models.TextField(null=True, blank=True)
+    feedback = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        app_label = 'organization_app'
-        db_table = 'MonthlyReport'
-    
-    def __str__(self):
-        return f"Report for {self.report_id}"
-
+        db_table = 'monthly_reviews_organization_to_student'
+        unique_together = ('student', 'organization', 'month', 'year')
+        
     def save(self, *args, **kwargs):
-        if not self.report_id:
-            self.report_id = str(uuid.uuid4()).replace('-', '')
+        if not self.review_id:
+            self.review_id = str(uuid.uuid4()).replace('-', '')
         super().save(*args, **kwargs)

@@ -112,15 +112,15 @@ class FeedbackQuestionListView(APIView):
         manual_parameters=[
             openapi.Parameter(
                 'feedback_for',
-                openapi.IN_QUERY,
-                description="Feedback target (candidate or company)",
+                openapi.IN_PATH,
+                description="Feedback target (student or organization)",
                 type=openapi.TYPE_STRING,
-                enum=['candidate', 'company']
+                enum=['student', 'organization']
             )
         ]
     )
     def get(self, request, feedback_for):
-        if feedback_for not in ['candidate', 'company']:
+        if feedback_for not in ['student', 'organization']:
             return Response({"detail": "Invalid feedback target."}, status=status.HTTP_400_BAD_REQUEST)
         questions = FeedbackQuestion.objects.filter(feedback_for=feedback_for)
         return Response([{"id": q.question_id, "question": q.question_text} for q in questions])

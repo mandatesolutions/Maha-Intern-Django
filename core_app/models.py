@@ -3,6 +3,10 @@ from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 import uuid
 
+from datetime import date
+
+current_year = date.today().year
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -130,6 +134,21 @@ class FeedbackResponse(models.Model):
         ('student_to_organisation', 'Student to Organisation'),
         ('organisation_to_student', 'Organisation to Student'),
     )
+    
+    MONTHS = (
+        ('January', 'January'),
+        ('February', 'February'),
+        ('March', 'March'),
+        ('April', 'April'),
+        ('May', 'May'),
+        ('June', 'June'),
+        ('July', 'July'),
+        ('August', 'August'),
+        ('September', 'September'),
+        ('October', 'October'),
+        ('November', 'November'),
+        ('December', 'December'),
+    )
 
     feedback_id = models.CharField(max_length=100, unique=True, editable=False, null=True, blank=True)
 
@@ -162,6 +181,9 @@ class FeedbackResponse(models.Model):
 
     feedback_type = models.CharField(max_length=30, choices=FEEDBACK_TYPE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
+    month = models.CharField(max_length=20, choices=MONTHS, null=True, blank=True)
+    year = models.PositiveIntegerField(auto_created=True, default=current_year, null=True, blank=True)
+    
 
     def __str__(self):
         return f"Feedback {self.feedback_id}"
@@ -174,6 +196,11 @@ class FeedbackResponse(models.Model):
     class Meta:
         db_table = 'FeedbackResponse'
         ordering = ['-created_at']
+        unique_together = (
+            ('sender_student', 'recipient_organization', 'month', 'year', 'feedback_type'),
+            ('sender_organization', 'recipient_student', 'month', 'year', 'feedback_type'),
+        )
+
 
 
 class FeedbackAnswer(models.Model):

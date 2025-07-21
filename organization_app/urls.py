@@ -28,8 +28,11 @@ urlpatterns = [
 
     path('org-dash-counter',views.OrgDashCounter.as_view(), name='org-dash-counter'),
 
-    path('add-monthreport', views.Add_MonthReport.as_view(), name='add-monthreport'),
-    path('monthreports/<str:stud_id>', views.MonthReportby_student.as_view(), name='monthreports-bystudent'),
+    path('monthreports/', views.ListMonthlyReview.as_view(), name='monthreport'),
+    path('monthreports/<str:stud_id>', views.CreateMonthlyReview.as_view(), name='add-monthreport'),
+    path('monthreport/<str:review_id>', views.MonthlyReviewView.as_view(), name='monthreport'),
+    path('received-monthlyreports/', views.RecievedMonthlyReviewView.as_view(), name='received-monthlyreports'),
+    
 
     # CRUD on SelectedStudent table
 

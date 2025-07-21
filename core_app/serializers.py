@@ -100,38 +100,45 @@ class FeedbackAnswerSerializer(serializers.ModelSerializer):
 # Feedback Serializer
 class FeedbackResponseSerializer(serializers.ModelSerializer):
     answers = FeedbackAnswerSerializer(many=True)
-    sender_id = serializers.SerializerMethodField()
-    recipient_id = serializers.SerializerMethodField()
+    sender = serializers.SerializerMethodField()
+    recipient = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
 
     class Meta:
         model = FeedbackResponse
         fields = [
             'feedback_id',
-            'sender_id',
-            'recipient_id',
+            'sender',
+            'recipient',
             'feedback_type',
             'created_at',
-            'answers'
+            'answers',
+            'month'
         ]
-        read_only_fields = ['feedback_id', 'created_at', 'sender_id', 'recipient_id']
+        read_only_fields = ['feedback_id', 'feedback_type', 'created_at', 'sender_id', 'recipient_id']
         
-    def get_recipient_id(self, obj):
+    def get_recipient(self, obj):
         if obj.feedback_type == 'student_to_organisation':
-            return obj.recipient_organization.org_id
+            org = obj.recipient_organization
+            return {'org_id': org.org_id, 'company_name': org.company_name}
         elif obj.feedback_type == 'organisation_to_student':
-            return obj.recipient_student.stud_id
+            student = obj.recipient_student
+            return {'stud_id': student.stud_id, 'name': f"{student.user.first_name} {student.user.last_name}"}
         
-    def get_sender_id(self, obj):
+    def get_sender(self, obj):
         if obj.feedback_type == 'student_to_organisation':
-            return obj.sender_student.stud_id
+            student = obj.sender_student
+            return {'stud_id': student.stud_id, 'name': f"{student.user.first_name} {student.user.last_name}"}
         elif obj.feedback_type == 'organisation_to_student':
-            return obj.sender_organization.org_id
+            org = obj.sender_organization
+            return {'org_id': org.org_id, 'company_name': org.company_name}
 
     def create(self, validated_data):
         answers_data = validated_data.pop('answers')
         request = self.context.get('request')
         recipient_id = self.context.get('recipient_id')
-        feedback_type = validated_data.get('feedback_type')
+        feedback_type = self.context.get('feedback_type')
+        validated_data['feedback_type'] = feedback_type
 
         if feedback_type == 'student_to_organisation':
             validated_data['sender_student'] = Student.objects.get(user=request.user)

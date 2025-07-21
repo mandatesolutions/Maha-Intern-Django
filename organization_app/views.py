@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.db.utils import IntegrityError
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -277,40 +278,75 @@ class OrgDashCounter(APIView):
         return Response(response_data,status=status.HTTP_200_OK)
 
 
-class Add_MonthReport(APIView):
-    permission_classes=[IsAuthenticated]
-    serializer_class = MonthlyReportSerializer
+class ListMonthlyReview(ListAPIView):
+    permission_classes=[IsAuthenticated, IsOrg]
+    serializer_class = MonthlyReviewOrganizationToStudentSerializer
+    
+    def get_queryset(self):
+        stud_id = self.request.query_params.get('stud_id')
+        monthly_reviews = MonthlyReviewOrganizationToStudent.objects.filter(organization__user=self.request.user)
+        if stud_id:
+            monthly_reviews = monthly_reviews.filter(student__stud_id=stud_id) 
+        return monthly_reviews
+    
+    @swagger_auto_schema(
+        tags=['Organization APIs'], 
+        operation_description="API for Get Month Report", 
+        operation_summary="Get Month Report",
+        manual_parameters=[
+            openapi.Parameter("stud_id", openapi.IN_QUERY, type=openapi.TYPE_STRING, )
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+class CreateMonthlyReview(APIView):
+    permission_classes=[IsAuthenticated, IsOrg]
+    serializer_class = MonthlyReviewOrganizationToStudentSerializer
 
     @swagger_auto_schema(tags=['Organization APIs'], request_body=serializer_class, operation_description="API for Adding Month Report to selected student", operation_summary="Add Month Report to Selected Student")
-    def post(self, request):
-        try:
-            app_obj = Application.objects.get(id=request.data.get('application'))
-        except Application.DoesNotExist:
-            return Response({"detail": "Application not found."}, status=status.HTTP_404_NOT_FOUND)
-        
-        if app_obj.status == 'Selected':
-            serializer = self.serializer_class(data = request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        else:
-            return Response({"detail": "Application not selected."}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class MonthReportby_student(APIView):
-    permission_classes=[IsAuthenticated]
-    serializer_class = MonthlyReportSerializer
-
-    @swagger_auto_schema(tags=['Organization APIs'], operation_description="API for Get Report by Student", operation_summary="Get Report By Student")
-    def get(self, request, stud_id, *args, **kwargs):
-        reports = MonthlyReport.objects.filter(application__student__id = stud_id)
-        serializer = self.serializer_class(reports, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def post(self, request, stud_id):
+        student = Student.objects.filter(stud_id=stud_id).first()
+        if not student:
+            return Response({"detail": "Student not found."}, status=status.HTTP_404_NOT_FOUND)
+        data = request.data
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid():
+            serializer.validated_data['student'] = student
+            serializer.validated_data['organization'] = request.user.organization
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
-
+class MonthlyReviewView(RetrieveDestroyAPIView):
+    permission_classes=[IsAuthenticated, IsOrg]
+    serializer_class = MonthlyReviewOrganizationToStudentSerializer
+    lookup_field = 'review_id'
+    
+    def get_queryset(self):
+        return MonthlyReviewOrganizationToStudent.objects.filter(organization__user=self.request.user)
+    
+    @swagger_auto_schema(tags=['Organization APIs'], operation_description="API for Get Month Report", operation_summary="Get Month Report")
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
+    @swagger_auto_schema(tags=['Organization APIs'], operation_description="API for Delete Month Report", operation_summary="Delete Month Report")
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs)
+    
+    @swagger_auto_schema(tags=['Organization APIs'], operation_description="API for Update Month Report", operation_summary="Update Month Report")
+    def put(self, request, review_id):
+        review_id = MonthlyReviewOrganizationToStudent.objects.filter(review_id=review_id).first()
+        
+        if not review_id:
+            return Response({"detail": "Review not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = self.serializer_class(review_id, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 class SelectedStudent(APIView):
     permission_classes = [IsAuthenticated,IsOrg]
     serializer_classes = SelectedStudentSerializer
@@ -666,13 +702,17 @@ class OrganizationGiveFeedbackToStudent(APIView):
     def post(self, request, stud_id):
         serializer = self.serializer_class(
             data=request.data,
-            context={'request': request, 'recipient_id': stud_id}
+            context={'request': request, 'recipient_id': stud_id, 'feedback_type': 'organisation_to_student'}
         )
         if serializer.is_valid():
-            if serializer.validated_data.get('feedback_type') != 'organisation_to_student':
-                return Response({"error": "Invalid feedback_type"}, status=status.HTTP_400_BAD_REQUEST)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            try:
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except IntegrityError as e:
+                return Response(
+                    {"detail": "Feedback has already been submitted for this student for this month."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # 2. Organization sees feedbacks given by them
@@ -727,3 +767,24 @@ class FeedbacksOfStudentForOrganization(APIView):
         serializer = FeedbackResponseSerializer(feedbacks, many=True)
         return Response(serializer.data)
 
+class RecievedMonthlyReviewView(ListAPIView):
+    permission_classes=[IsAuthenticated, IsOrg]
+    serializer_class = MonthlyReviewStudentToOrganizationSerializer
+    
+    def get_queryset(self):
+        stud_id = self.request.query_params.get('stud_id')
+        monthly_reviews = MonthlyReviewStudentToOrganization.objects.filter(organization__user=self.request.user)
+        if stud_id:    
+            monthly_reviews = monthly_reviews.filter(student__stud_id=stud_id)
+        return monthly_reviews
+    
+    @swagger_auto_schema(
+        tags=['Organization APIs'], 
+        operation_description="API for Get Recieved Monthly Report from student", 
+        operation_summary="Get Recieved Monthly Report",
+        manual_parameters=[
+            openapi.Parameter("stud_id", openapi.IN_QUERY, type=openapi.TYPE_STRING, )
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)

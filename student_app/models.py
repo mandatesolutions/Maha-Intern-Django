@@ -74,4 +74,46 @@ class Education(models.Model):
     class Meta:
         db_table = 'education'
     
- 
+class MonthlyReviewStudentToOrganization(models.Model):
+    
+    MONTHS = [
+        ('January', 'January'),
+        ('February', 'February'),
+        ('March', 'March'),
+        ('April', 'April'),
+        ('May', 'May'),
+        ('June', 'June'),
+        ('July', 'July'),
+        ('August', 'August'),
+        ('September', 'September'),
+        ('October', 'October'),
+        ('November', 'November'),
+        ('December', 'December'),
+    ]
+    
+    review_id = models.CharField(max_length=50, unique=True, editable=False, null=True)
+    organization = models.ForeignKey(
+        'organization_app.Organization',
+        on_delete=models.CASCADE,
+        related_name='monthly_reviews_received_from_students'
+    )
+    student = models.ForeignKey(
+        'student_app.Student',
+        on_delete=models.CASCADE,
+        related_name='monthly_reviews_given_to_organizations'
+    )
+
+    month = models.CharField(max_length=50, choices=MONTHS)
+    year = models.IntegerField(auto_created=True, default=current_year)
+    review_content = models.TextField(null=True, blank=True)
+    feedback = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'monthly_reviews_student_to_organization'
+        unique_together = ('student', 'organization', 'month', 'year')
+        
+    def save(self, *args, **kwargs):
+        if not self.review_id:
+            self.review_id = str(uuid.uuid4()).replace('-', '')
+        super().save(*args, **kwargs)
