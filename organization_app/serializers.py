@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import *
+from student_app.models import Student, Education
 from django.conf import settings
 from urllib.parse import urljoin
 
@@ -61,7 +62,7 @@ class AdminShowInternshipSerializers(serializers.ModelSerializer):
         model = Internship
         fields = ['id','intern_id', 'intern_type','company_name','title', 'description', 'no_of_openings', 'stipend_type', 'stipend_amount', 
                   'location', 'duration', 'skills_required', 'contact_email', 'contact_mobile', 'start_date', 
-                  'last_date_of_apply', 'perks', 'qualification_in', 'specialisation_in', 'terms']
+                  'last_date_of_apply', 'perks', 'qualification_in', 'is_approved','specialisation_in', 'terms']
 
 
 class InternshipSerializers(serializers.ModelSerializer):
@@ -129,6 +130,8 @@ class ShowAllApplications(serializers.ModelSerializer):
     student_name = serializers.SerializerMethodField()
     intern_uid = serializers.CharField(source = 'internship.intern_id',read_only = True)
     history = serializers.SerializerMethodField()
+    applied_on = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+    updated_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
     class Meta:
         model = Application
         fields = "__all__"
@@ -238,3 +241,22 @@ class OfferDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = OfferDetails
         exclude = ['application']
+        
+        
+class EducationDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Education
+        exclude = ['student','id']
+        
+class SearchStudentSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email', read_only=True)
+    name = serializers.SerializerMethodField()
+    education = EducationDetailsSerializer(source='student_education', read_only=True)
+    class Meta:
+        model = Student
+        exclude = ['user','is_education_filled','id']
+        
+    def get_name(self, obj):
+        first_name = obj.user.first_name
+        last_name = obj.user.last_name
+        return f"{first_name} {last_name}"

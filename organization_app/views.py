@@ -22,6 +22,7 @@ from admin_app.models import *
 from admin_app.serializers import *
 
 from core_app.serializers import *
+from core_app.views import CustomSearchFilter, CustomPaginator
 
 # Create your views here.
 
@@ -180,18 +181,37 @@ class DeleteIntern(APIView):
         return Response({"success": "Internship deleted successfully."}, status=status.HTTP_200_OK)  # Return the updated data
     
 
-class OrganizationAllApps(APIView):
+class OrganizationAllApps(ListAPIView):
     permission_classes=[IsAuthenticated]
     serializer_class = ShowAllApplications
+    
+    def get_queryset(self):
+        intern_id = self.kwargs['intern_id']
+        status = self.request.query_params.get('status')
+        
+        appilcation = Application.objects.filter(internship__intern_id=intern_id)
+        
+        if status:
+            appilcation = appilcation.filter(status=status)
+            
+        return appilcation
 
 
-    @swagger_auto_schema(tags=['Organization APIs'],operation_description="All Internships data show organization",operation_summary="All Internships data show organization")
+    @swagger_auto_schema(
+        tags=['Organization APIs'],
+        operation_description="All Internships data show organization",
+        operation_summary="All Internships data show organization",
+        manual_parameters=[
+            openapi.Parameter(
+                "status",
+                openapi.IN_QUERY,
+                type=openapi.TYPE_STRING,
+                enum=["pending", "shortlisted", "rejected", "selected","accepted","declined"],
+            )
+        ]
+    )
     def get(self,request,intern_id):
-        intern_obj=Internship.objects.get(intern_id=intern_id)
-        apps_data = Application.objects.filter(internship_id=intern_obj.id)
-        # Pass the  queryset to the serializer to update it
-        serializer = self.serializer_class(apps_data,many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)  # Return the updated data
+        return super().get(request, intern_id)
     
 
 class UpdateAppsStatus(APIView):
@@ -788,3 +808,28 @@ class RecievedMonthlyReviewView(ListAPIView):
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
+    
+class Org_SearchStudents(ListAPIView):
+    permission_classes=[IsAuthenticated, IsOrg]
+    serializer_class = SearchStudentSerializer
+    queryset = Student.objects.filter(is_blocked=False)
+    pagination_class = CustomPaginator
+    filter_backends = [CustomSearchFilter]
+    search_fields = [
+        'stud_id', 'user__first_name', 'user__last_name', 'user__email',
+        'district','taluka','gender','last_course','university','profile','language','skills'
+    ]
+    
+    @swagger_auto_schema(
+        tags=['Organization APIs'], 
+        operation_description="API for serach students", 
+        operation_summary="Get All Students",
+        manual_parameters=[
+            openapi.Parameter(
+                "search", openapi.IN_QUERY, type=openapi.TYPE_STRING, 
+                description="Search by [ 'stud_id', 'first_name', 'last_name', 'email', 'district','taluka','gender','last_course','university','profile','language','skills' ]")
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+        

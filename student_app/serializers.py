@@ -58,7 +58,7 @@ class InternshipSerializer(serializers.ModelSerializer):
     class Meta:
         model = Internship
         fields = "__all__"
-        read_only_fields = ['company']
+        read_only_fields = ['company','is_approved']
         
 
 class Add_ApplicationSerializer(serializers.ModelSerializer):

@@ -52,14 +52,14 @@ class Student_GetInternships(APIView):
 
     @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get 10 Internships", operation_summary="Get 10 Internships")
     def get(self, request, *args, **kwargs):
-        internships = Internship.objects.all().order_by('-id')[:9]
+        internships = Internship.objects.filter(is_approved=True).order_by('-id')[:9]
         serializer = self.serializer_class(internships, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class Search_Internships(ListAPIView):
     serializer_class = InternshipSerializers
-    queryset = Internship.objects.all()
+    queryset = Internship.objects.filter(is_approved=True)
     pagination_class = CustomPaginator
     filter_backends = [CustomSearchFilter]
     search_fields = [ 
@@ -122,7 +122,7 @@ class Student_InternshipDetail(APIView):
     
     def get_object(self, uid):
         try:
-            return Internship.objects.get(intern_id=uid)
+            return Internship.objects.get(intern_id=uid, is_approved=True)
         except Internship.DoesNotExist:
             raise NotFound("Internship not found.")
 
@@ -138,7 +138,7 @@ class Student_Internshipapply(APIView):
  
     @swagger_auto_schema(tags=['Student APIs'], operation_description="Api of Apply for Internship", operation_summary="Apply for Internship")
     def post(self, request, intern_id):
-        internship = Internship.objects.filter(intern_id=intern_id).first()
+        internship = Internship.objects.filter(intern_id=intern_id, is_approved=True).first()
         student = request.user.student
         if internship:
             

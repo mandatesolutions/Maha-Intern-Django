@@ -56,5 +56,6 @@ urlpatterns = [
     path('feedbacks/students/', views.FeedbacksOfStudentForOrganization.as_view(), name='feedbacks-of-all-students'),
     path('feedbacks/students/<str:stud_id>/', views.FeedbacksOfStudentForOrganization.as_view(), name='feedbacks-of-specific-student'),
 
+    path('serach-students/', views.Org_SearchStudents.as_view(), name='search-students'),
 
 ]

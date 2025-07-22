@@ -26,11 +26,14 @@ class Organization(models.Model):
     district = models.CharField(max_length=155,null=True,blank=True)
     taluka = models.CharField(max_length=155,null=True,blank=True)
     organization_logo = models.FileField(upload_to='company_logo/',null=True,blank=True)
+    profile = models.FileField(upload_to='company_profile/',null=True,blank=True)
+    is_approved = models.BooleanField(default=False)
     
 
     class Meta:
         app_label = 'organization_app'
         db_table = 'Organization'
+        ordering = ['-id']
 
     def __str__(self):
         return self.company_name
@@ -74,10 +77,12 @@ class Internship(models.Model):
     specialisation_in = models.CharField(max_length=1000,blank=True, null=True)
     terms = models.TextField(null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_approved = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'organization_app'
         db_table = 'Internship'
+        ordering = ['-created_at']
     
     def __str__(self):
         return self.title
@@ -101,7 +106,7 @@ class Application(models.Model):
     
     app_id = models.CharField(max_length=100, unique=True, editable=False, null=True)
     student = models.ForeignKey('student_app.Student', on_delete=models.CASCADE, related_name='student_applications', blank=True, null=True)  # Student is a User
-    internship = models.ForeignKey('organization_app.Internship', on_delete=models.CASCADE,null=True,blank=True)
+    internship = models.ForeignKey('organization_app.Internship', on_delete=models.CASCADE,null=True,blank=True, related_name="internship_applications")
     applied_on = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=APPLICATION_STATUS_CHOICES, default='pending')
     updated_at = models.DateTimeField(auto_now=True,null=True,blank=True)

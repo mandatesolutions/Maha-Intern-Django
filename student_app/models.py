@@ -35,6 +35,7 @@ class Student(models.Model):
 
     class Meta:
         db_table = 'Student'
+        ordering = ['-id']
         
     def save(self, *args, **kwargs):
         if not self.stud_id:

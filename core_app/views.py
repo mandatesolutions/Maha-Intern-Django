@@ -21,7 +21,7 @@ import math
 #     serializer_class = UserSerialiazer
 #     permission_classes = [permissions.AllowAny]
     
-#     @swagger_auto_schema(tags=['Config APIs'], operation_description="API for Registration", operation_summary="Registration API",request_body=serializer_class)
+#     @swagger_auto_schema(tags=['Config APIs'], operation_description='API for Registration', operation_summary='Registration API',request_body=serializer_class)
 #     def post(self, request, *args, **kwargs):
 #         serializer = self.serializer_class(data=request.data)
 #         if serializer.is_valid():
@@ -36,7 +36,7 @@ class LoginView(APIView):
     permission_classes = [permissions.AllowAny]  
     serializer_class = LoginSerializer
 
-    @swagger_auto_schema(tags=['Core APIs'], operation_description="Api for Login user", operation_summary="Api for Login user",request_body=serializer_class)
+    @swagger_auto_schema(tags=['Core APIs'], operation_description='Api for Login user', operation_summary='Api for Login user',request_body=serializer_class)
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
 
@@ -54,12 +54,22 @@ class LoginView(APIView):
                 'access': str(access_token), 
                 'refresh': str(refresh), 
                 'role': role, 
-                'name':f"{user.first_name} {user.last_name}"
+                'name':f'{user.first_name} {user.last_name}'
             }
             
-            if role == "Student":
-                response["is_education_filled"] = user.student.is_education_filled
-            
+            if role == 'Student':
+                student = user.student
+                if student.is_blocked:
+                    return Response(
+                        {'details': f'Student - {student.user.first_name} {student.user.last_name} is blocked by admin'}, 
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+                response['is_education_filled'] = student.is_education_filled
+                
+            if role == 'Organization':
+                organization = user.organization
+                if not organization.is_approved:
+                    return Response({'details': f'Organization - {organization.company_name} is not approved by admin'}, status=status.HTTP_403_FORBIDDEN)
             
             # Return the tokens
             return Response(response,status=status.HTTP_200_OK)
@@ -97,7 +107,7 @@ class CustomSearchFilter(SearchFilter):
         for term in search_term:
             or_query = Q()
             for field in search_fields:
-                or_query |= Q(**{f"{field}__icontains": term})
+                or_query |= Q(**{f'{field}__icontains': term})
             conditions &= or_query
 
         return queryset.filter(conditions).distinct()
@@ -107,13 +117,13 @@ class FeedbackQuestionListView(APIView):
 
     @swagger_auto_schema(
         tags=['Core APIs'],
-        operation_description="Get Feedback Questions",
-        operation_summary="Get Feedback Questions",
+        operation_description='Get Feedback Questions',
+        operation_summary='Get Feedback Questions',
         manual_parameters=[
             openapi.Parameter(
                 'feedback_for',
                 openapi.IN_PATH,
-                description="Feedback target (student or organization)",
+                description='Feedback target (student or organization)',
                 type=openapi.TYPE_STRING,
                 enum=['student', 'organization']
             )
@@ -121,15 +131,15 @@ class FeedbackQuestionListView(APIView):
     )
     def get(self, request, feedback_for):
         if feedback_for not in ['student', 'organization']:
-            return Response({"detail": "Invalid feedback target."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Invalid feedback target.'}, status=status.HTTP_400_BAD_REQUEST)
         questions = FeedbackQuestion.objects.filter(feedback_for=feedback_for)
-        return Response([{"id": q.question_id, "question": q.question_text} for q in questions])
+        return Response([{'id': q.question_id, 'question': q.question_text} for q in questions])
 
 class GetAllNotifications(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationSerializer
     
-    @swagger_auto_schema(tags=['Core APIs'], operation_description="Get All Notifications",operation_summary="Get All Notifications",)
+    @swagger_auto_schema(tags=['Core APIs'], operation_description='Get All Notifications',operation_summary='Get All Notifications',)
     def get(self, request):
         notifications = Notification.objects.filter(user=request.user)
         serializer = self.serializer_class(notifications, many=True)
