@@ -8,8 +8,8 @@ from urllib.parse import urljoin
 class OrganizationSerializers(serializers.ModelSerializer):
     class Meta:
         model = Organization
-        fields = ["id", "org_id", "company_name","industry_type","company_id_type","company_unique_id","reprsentative_name","district",
-                  "taluka","organization_logo"]
+        fields = ['id', 'org_id', 'company_name','industry_type','company_id_type','company_unique_id','reprsentative_name','district',
+                  'taluka','organization_logo']
         
 
 
@@ -57,12 +57,14 @@ class UpdateOrganizationSerializer(serializers.ModelSerializer):
 
 
 class AdminShowInternshipSerializers(serializers.ModelSerializer):
-    company_name = serializers.CharField(source = 'company.company_name')
+    company_name = serializers.CharField(source = 'company.company_name', read_only=True)
+    is_approved = serializers.BooleanField(read_only=True)
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
     class Meta:
         model = Internship
         fields = ['id','intern_id', 'intern_type','company_name','title', 'description', 'no_of_openings', 'stipend_type', 'stipend_amount', 
                   'location', 'duration', 'skills_required', 'contact_email', 'contact_mobile', 'start_date', 
-                  'last_date_of_apply', 'perks', 'qualification_in', 'is_approved','specialisation_in', 'terms']
+                  'last_date_of_apply', 'perks', 'qualification_in', 'is_approved','created_at','specialisation_in', 'terms']
 
 
 class InternshipSerializers(serializers.ModelSerializer):
@@ -71,6 +73,7 @@ class InternshipSerializers(serializers.ModelSerializer):
     class Meta:
         model = Internship
         fields = ['id', 'has_applied', 'intern_id', 'intern_type', 'title', 'description', 'no_of_openings', 'stipend_type', 'stipend_amount', 'location', 'duration', 'skills_required', 'contact_email', 'contact_mobile', 'start_date', 'last_date_of_apply', 'perks', 'qualification_in', 'specialisation_in', 'terms', 'company']
+        ref_name = 'organization_internship_serializer'
     
     def get_has_applied(self, obj):
         user = self.context.get('request').user
@@ -105,41 +108,43 @@ class InternshipSerializers(serializers.ModelSerializer):
 class ApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Application
-        fields = "__all__"
+        fields = '__all__'
 
 
 class ShowInternApplicationSerializer(serializers.ModelSerializer):
     student_name = serializers.SerializerMethodField()
     class Meta:
         model = Application
-        fields = "__all__"
+        fields = '__all__'
 
     
     def get_student_name(self, obj):
         first_name = obj.student.user.first_name
         last_name = obj.student.user.last_name
-        return f"{first_name} {last_name}"
+        return f'{first_name} {last_name}'
 
 class ApplicationStatusHistorySerializer(serializers.ModelSerializer):
+    changed_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
     class Meta:
         model = ApplicationStatusHistory
         exclude = ['application']
+        ref_name = 'application_status_history_serializer'
         
 class ShowAllApplications(serializers.ModelSerializer):
     student_email = serializers.CharField(source='student.user.email', read_only=True)
     student_name = serializers.SerializerMethodField()
     intern_uid = serializers.CharField(source = 'internship.intern_id',read_only = True)
     history = serializers.SerializerMethodField()
-    applied_on = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
-    updated_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+    applied_on = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
+    updated_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
     class Meta:
         model = Application
-        fields = "__all__"
+        fields = '__all__'
 
     def get_student_name(self, obj):
         first_name = obj.student.user.first_name
         last_name = obj.student.user.last_name
-        return f"{first_name} {last_name}"
+        return f'{first_name} {last_name}'
     
     def get_history(self, obj):
         history = ApplicationStatusHistory.objects.filter(application=obj)
@@ -167,7 +172,7 @@ class ShowSelectedApplications(serializers.ModelSerializer):
     def get_student_name(self, obj):
         first_name = obj.student.user.first_name
         last_name = obj.student.user.last_name
-        return f"{first_name} {last_name}"
+        return f'{first_name} {last_name}'
     
 
 
@@ -193,13 +198,13 @@ class AdminShowSelectedApplications(serializers.ModelSerializer):
     def get_student_name(self, obj):
         first_name = obj.student.user.first_name
         last_name = obj.student.user.last_name
-        return f"{first_name} {last_name}"
+        return f'{first_name} {last_name}'
         
 
 class MonthlyReviewOrganizationToStudentSerializer(serializers.ModelSerializer):
     organization = serializers.SerializerMethodField()
     student = serializers.SerializerMethodField()
-    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
+    created_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M', read_only=True)
     class Meta:
         model = MonthlyReviewOrganizationToStudent
         fields = '__all__'
@@ -211,7 +216,7 @@ class MonthlyReviewOrganizationToStudentSerializer(serializers.ModelSerializer):
     
     def get_student(self, obj):
         student = obj.student
-        return {'stud_id': student.stud_id, 'name': f"{student.user.first_name} {student.user.last_name}"}
+        return {'stud_id': student.stud_id, 'name': f'{student.user.first_name} {student.user.last_name}'}
 
 class SelectedStudentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -230,17 +235,42 @@ class AdminSelectedStudentSerializer(serializers.ModelSerializer):
     def get_student_name(self, obj):
         first_name = obj.application.student.user.first_name
         last_name = obj.application.student.user.last_name
-        return f"{first_name} {last_name}"
+        return f'{first_name} {last_name}'
     
 class InterviewDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = InterviewDetails
         exclude = ['application']
-        
+        ref_name = 'interview_details_serializer'
 class OfferDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = OfferDetails
         exclude = ['application']
+        
+class ApplicationDetailedSerializer(serializers.ModelSerializer):
+    student = serializers.SerializerMethodField(read_only=True)
+    organization = serializers.SerializerMethodField(read_only=True)
+    internship = serializers.SerializerMethodField(read_only=True)
+    interview = InterviewDetailsSerializer(source='application_interview',read_only=True)
+    offer_details = OfferDetailsSerializer(source='application_offer',read_only=True)
+    history = ApplicationStatusHistorySerializer(source='status_history',many=True, read_only=True)
+    applied_on = serializers.DateTimeField(format='%Y-%m-%d %H:%M', read_only=True)
+    updated_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M', read_only=True)
+    class Meta:
+        model = Application
+        exclude = ['id']
+        
+    def get_student(self, obj):
+        student = obj.student
+        return {'stud_id': student.stud_id, 'name': f'{student.user.first_name} {student.user.last_name}'}
+    
+    def get_organization(self, obj):
+        org = obj.internship.company
+        return {'org_id': org.org_id, 'company_name': org.company_name}
+    
+    def get_internship(self, obj):
+        internship = obj.internship
+        return {'intern_id': internship.intern_id, 'title': internship.title}
         
         
 class EducationDetailsSerializer(serializers.ModelSerializer):
@@ -259,4 +289,4 @@ class SearchStudentSerializer(serializers.ModelSerializer):
     def get_name(self, obj):
         first_name = obj.user.first_name
         last_name = obj.user.last_name
-        return f"{first_name} {last_name}"
+        return f'{first_name} {last_name}'

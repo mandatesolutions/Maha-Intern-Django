@@ -6,7 +6,8 @@ from organization_app.models import *
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
-        fields = ['dob', 'gender', 'district', 'taluka', 'adhar_number', 'last_course', 'university']
+        exclude = ['user','id']
+        read_only_fields = ['is_education_filled','is_blocked']
 
 
 class UserModelSerializer(serializers.ModelSerializer):
@@ -24,37 +25,77 @@ class UserModelSerializer(serializers.ModelSerializer):
         return user
 
 
-class Update_UserModelSerializer(serializers.ModelSerializer):
-    student = StudentSerializer()
+class StudentProfileUpdateSerializer(serializers.ModelSerializer):
+    # Student model fields flattened
+    resume = serializers.FileField(required=False)
+    cover_letter = serializers.FileField(required=False)
+    adhar_number = serializers.CharField(required=False)
+    district = serializers.CharField(required=False)
+    taluka = serializers.CharField(required=False)
+    dob = serializers.DateField(required=False)
+    gender = serializers.CharField(required=False)
+    last_course = serializers.CharField(required=False)
+    university = serializers.CharField(required=False)
+    profile = serializers.CharField(required=False)
+    language = serializers.CharField(required=False)
+    skills = serializers.CharField(required=False)
 
     class Meta:
         model = UserModel
-        fields = ['first_name', 'last_name', 'mobile', 'role', 'email', 'password', 'student']
-        extra_kwargs = {'password': {'write_only': True}}
+        fields = [
+            'first_name', 'last_name', 'mobile', 'email', 'role', 
+            'resume', 'cover_letter', 'adhar_number', 'district', 'taluka',
+            'dob', 'gender', 'last_course', 'university', 'profile',
+            'language', 'skills', 
+        ]
+        read_only_fields = ['role']
 
     def update(self, instance, validated_data):
-        # Extract candidate data from validated_data and remove it from the main update data
-        student_data = validated_data.pop('student', None)
-
-        # Update the main user fields first (name, mobile, etc.)
+        # Update User
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
         instance.mobile = validated_data.get('mobile', instance.mobile)
-        instance.role = validated_data.get('role', instance.role)
         instance.email = validated_data.get('email', instance.email)
-
         instance.save()
 
-        if student_data:
-            student_instance = instance.student
-            for attr, value in student_data.items():
-                setattr(student_instance, attr, value)
-            student_instance.save()
+        # Update Student
+        student = instance.student
+        student_fields = [
+            'resume', 'cover_letter', 'adhar_number', 'district', 'taluka',
+            'dob', 'gender', 'last_course', 'university', 'profile',
+            'language', 'skills',
+        ]
+        for field in student_fields:
+            if field in validated_data:
+                setattr(student, field, validated_data[field])
+        student.save()
 
         return instance
     
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        student = instance.student
+
+        # Add student-related fields manually
+        rep.update({
+            'resume': student.resume.url if student.resume else None,
+            'cover_letter': student.cover_letter.url if student.cover_letter else None,
+            'adhar_number': student.adhar_number,
+            'district': student.district,
+            'taluka': student.taluka,
+            'dob': student.dob,
+            'gender': student.gender,
+            'last_course': student.last_course,
+            'university': student.university,
+            'profile': student.profile,
+            'language': student.language,
+            'skills': student.skills,
+        })
+        return rep
+
 
 class InternshipSerializer(serializers.ModelSerializer):
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
     class Meta:
         model = Internship
         fields = "__all__"

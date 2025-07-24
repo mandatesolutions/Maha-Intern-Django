@@ -44,6 +44,18 @@ class Allstudent_Serializer(serializers.ModelSerializer):
             'stud_id', 'user', 'adhar_number', 'district', 'taluka', 'dob', 'gender', 'last_course', 'university','profile','language','skills','resume','cover_letter','profile_pic','education'
         ]
 
+class StudentResumesSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField(read_only=True)
+    class Meta:
+        model = Student
+        fields = ['stud_id','resume','cover_letter','name']
+        
+    def get_name(self, obj):
+        return f"{obj.user.first_name} {obj.user.last_name}"
+    
+class ForwardStudentProfileSerializer(serializers.Serializer):
+    org_id = serializers.CharField(required=True)
+    redirect_url = serializers.URLField(required=True)
 
 class AllOrganizationSerializers(serializers.ModelSerializer):
     user = User_Serializer()

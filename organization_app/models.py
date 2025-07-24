@@ -116,6 +116,7 @@ class Application(models.Model):
     class Meta:
         app_label = 'organization_app'
         db_table = 'Application'
+        ordering = ['-applied_on']
     
     def save(self, *args, **kwargs):
         if not self.app_id:

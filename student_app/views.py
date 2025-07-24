@@ -98,16 +98,25 @@ class Student_Dashboard(APIView):
     
 class Student_ProfileDetail(APIView):
     permission_classes = [IsAuthenticated, IsStudent]
-    serializer_class = Update_UserModelSerializer
+    serializer_class = StudentProfileUpdateSerializer
+    parser_classes = [MultiPartParser, FormParser]
 
-    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get Profile", operation_summary="Get Profile")
+    @swagger_auto_schema(
+        tags=['Student APIs'],
+        operation_description="API for Get Profile",
+        operation_summary="Get Profile"
+    )
     def get(self, request, *args, **kwargs):
         user = request.user
         serializer = self.serializer_class(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    # parser_classes = (MultiPartParser, FormParser)
-    @swagger_auto_schema(tags=['Student APIs'], request_body=serializer_class, operation_description="API for Edit Profile", operation_summary="Edit Profile")
+    @swagger_auto_schema(
+        tags=['Student APIs'],
+        request_body=serializer_class,
+        operation_description="API for Edit Profile (supports file upload)",
+        operation_summary="Edit Profile"
+    )
     def put(self, request, *args, **kwargs):
         user = request.user
         serializer = self.serializer_class(user, data=request.data, partial=True)
@@ -115,6 +124,7 @@ class Student_ProfileDetail(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     
 
 class Student_InternshipDetail(APIView):

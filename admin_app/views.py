@@ -146,6 +146,34 @@ class Admin_BlockUnBlockStudentView(APIView):
         student.is_blocked = True if stud_status == 'block' else False
         student.save()
         return Response({'details': f'Student {'blocked' if stud_status == 'block' else 'unblocked'} successfully.'}, status=status.HTTP_200_OK)
+    
+class Admin_StudentResumesListView(ListAPIView):
+    permission_classes = [IsAuthenticated,IsAdmin]
+    serializer_class = StudentResumesSerializer
+    queryset = Student.objects.exclude(resume__isnull=True).exclude(resume__exact='')
+    pagination_class = CustomPaginator
+    filter_backends = [CustomSearchFilter]
+    search_fields = ['user__first_name','user__last_name','user__email','district','taluka','gender','last_course','university','profile','language','skills']
+    
+    @swagger_auto_schema(tags=['Admin APIs'], operation_description='API for Get Student Resumes', operation_summary='Get Student Resumes')
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
+class Admin_ForwardStudentProfileToOrganization(APIView):
+    permission_classes = [IsAuthenticated,IsAdmin]
+    serializer_class = ForwardStudentProfileSerializer
+    
+    @swagger_auto_schema(tags=['Admin APIs'],request_body=serializer_class,operation_description="API to Forward Student Profile", operation_summary="Forward Student Profile")
+    def post(self, request, *args, **kwargs):
+        org_id = request.data.get('org_id')
+        organization = get_object_or_404(Organization, org_id=org_id)
+        Notification.objects.create(
+            title="Student Profile Forwarded",
+            message=f"Student Profile has been forwarded by Admin",
+            redirect_url=request.data.get('redirect_url'),
+            user=organization.user
+        )
+        return Response({"message": "Student Profile forwarded successfully"},status=status.HTTP_200_OK)
 
 # Organization APIs
 class Admin_OrganizationListCreateView(ListAPIView):
@@ -228,9 +256,10 @@ class Admin_ApproveBlockOrganizationView(APIView):
         return Response({'details':f'{organization.company_name} is {'approved' if org_status == 'approve' else 'blocked'}'} ,status=status.HTTP_200_OK)
 
 # Internship APIs 
-class Admin_InternshipListCreateView(ListAPIView):
+class Admin_InternshipListView(ListAPIView):
     serializer_class = AdminShowInternshipSerializers
     permission_classes=[IsAuthenticated, IsAdmin]
+    pagination_class = CustomPaginator
     
     def get_queryset(self):
         org_id = self.request.query_params.get('org_id')
@@ -261,6 +290,45 @@ class Admin_InternshipListCreateView(ListAPIView):
     def get(self,request):
         return super().get(request)
     
+class Admin_InternshipCreateView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = AdminShowInternshipSerializers
+    
+    @swagger_auto_schema(tags=['Admin APIs'],operation_description='create internship on behalf of organization ',request_body=serializer_class,operation_summary='create internship ')
+    def post(self, request, org_id):
+        organization = get_object_or_404(Organization, org_id=org_id)
+        
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.validated_data['company'] = organization
+            serializer.validated_data['is_approved'] = True
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class Admin_InternshipRetrieveUpdateDeleteView(RetrieveDestroyAPIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = AdminShowInternshipSerializers
+    queryset = Internship.objects.all()
+    lookup_field = 'intern_id'
+    
+    @swagger_auto_schema(tags=['Admin APIs'],operation_description='get internship ',operation_summary='get internship ')
+    def get(self, request, intern_id):
+        return super().get(request, intern_id)
+    
+    @swagger_auto_schema(tags=['Admin APIs'],operation_description='update internship ',request_body=serializer_class,operation_summary='update internship ')
+    def put(self, request, intern_id):
+        internship = get_object_or_404(Internship, intern_id=intern_id)
+        serializer = self.serializer_class(internship, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @swagger_auto_schema(tags=['Admin APIs'],operation_description='delete internship',operation_summary='delete internship ')
+    def delete(self, request, intern_id):
+        return super().delete(request, intern_id)
+    
 class Admin_ApproveBlockInternship(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
     
@@ -279,7 +347,69 @@ class Admin_ApproveBlockInternship(APIView):
         internship.is_approved = True if intern_status == 'approve' else False
         internship.save()
         return Response({'details':f'{internship.title} is {'approved' if intern_status == 'approve' else 'rejected'}'} ,status=status.HTTP_200_OK)
+    
+# Internship Applications
 
+class Admin_ApplicationsListView(ListAPIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = ApplicationDetailedSerializer
+    pagination_class = CustomPaginator
+
+    def get_queryset(self):
+        intern_id = self.request.query_params.get('intern_id')
+        stud_id = self.request.query_params.get('stud_id')
+        org_id = self.request.query_params.get('org_id')
+        status = self.request.query_params.get('status')
+        
+        applications = Application.objects.all()
+        if intern_id:
+            applications = applications.filter(internship__intern_id=intern_id)
+        if stud_id:
+            applications = applications.filter(student__stud_id=stud_id)
+        if org_id:
+            applications = applications.filter(internship__company__org_id=org_id)
+        if status:
+            applications = applications.filter(status=status)
+        
+        return applications
+    
+    
+    @swagger_auto_schema(
+        tags=['Admin APIs'],
+        operation_description='Get all the Applications or by internship or student or organization or status',
+        operation_summary='Get Applications or by internship or student or organization or status',
+        manual_parameters=[
+            openapi.Parameter(
+                'intern_id', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='Filter by internship ID',
+            ),
+            openapi.Parameter(
+                'stud_id', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='Filter by student ID',
+            ),
+            openapi.Parameter(
+                'org_id', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='Filter by organization ID',
+            ),
+            openapi.Parameter(
+                'status', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='Filter by application status', enum=['pending', 'shortlisted', 'rejected', 'selected','accepted','rejected'],
+            )
+        ]
+    )
+    def get(self,request):
+        return super().get(request)
+    
+class Admin_RetrieveApplication(RetrieveAPIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = ApplicationDetailedSerializer
+    queryset = Application.objects.all()
+    lookup_field = 'app_id'
+    
+    @swagger_auto_schema(
+        tags=['Admin APIs'],
+        operation_description='Get a specific Application by ID',
+        operation_summary='Get a specific Application by ID'
+    )
+    def get(self, request, app_id):
+        return super().get(request, app_id)
+    
 class AppsByIntern(APIView):
     serializer_classes = ShowInternApplicationSerializer
     permission_classes=[IsAuthenticated,IsAdmin]
@@ -324,36 +454,6 @@ class LatestStudent(APIView):
 
         return Response(student_data,status=status.HTTP_200_OK)
 
-
-
-
-class GetStudentInfo(APIView):
-    serializer_classes = Allstudent_Serializer
-    permission_classes=[IsAuthenticated]
-
-    @swagger_auto_schema(tags=['Admin APIs'],operation_description='show student info for application',operation_summary='show student info for application')
-    def get(self,request,student_id):
-        try:
-            stud_data = Student.objects.get(id = student_id)
-        except Student.DoesNotExist:
-            return Response({'error':'Student id not found'})
-        
-        serializer = self.serializer_classes(stud_data)
-        return Response(serializer.data,status=status.HTTP_200_OK)
-    
-class GetOrganInfo(APIView):
-    serializer_classes = AllOrganizationSerializers
-    permission_classes=[IsAuthenticated]
-
-    @swagger_auto_schema(tags=['Admin APIs'],operation_description='show organization info for application',operation_summary='show organization info for application')
-    def get(self,request,organ_id):
-        try:
-            organ_data = Organization.objects.get(id = organ_id)
-        except Organization.DoesNotExist:
-            return Response({'error':'Organization id not found'})
-        
-        serializer = self.serializer_classes(organ_data)
-        return Response(serializer.data,status=status.HTTP_200_OK)
     
 class GetStudentReport(APIView):
     serializer_classes = MonthlyReviewOrganizationToStudentSerializer
