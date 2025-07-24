@@ -15,11 +15,13 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from .models import *
-from core_app.models import *
-from core_app.serializers import *
-from core_app.views import CustomSearchFilter, CustomPaginator
-from organization_app.models import *
 from .serializers import *
+
+from core_app.views import CustomSearchFilter, CustomPaginator
+from core_app.serializers import *
+from core_app.models import *
+
+from organization_app.models import *
 from organization_app.serializers import *
 
 from datetime import date
@@ -165,18 +167,15 @@ class Student_Internshipapply(APIView):
         else:
             return Response({"message": "Internship not found."}, status=status.HTTP_404_NOT_FOUND)
         
-class Student_Applications(ListAPIView):
+class Student_ListApplications(ListAPIView):
     permission_classes = [IsAuthenticated, IsStudent]
-    serializer_class = ApplicationDetailsSerializer
+    serializer_class = ApplicationDetailedSerializer
+    # pagination_class = CustomPaginator
     
     def get_queryset(self):
         student = self.request.user.student
         
-        applications = Application.objects.select_related(
-            'student__user', 'internship__company'
-        ).prefetch_related(
-            'status_history', 'application_interview', 'application_offer'
-        ).filter(student=student).order_by('-updated_at')
+        applications = Application.objects.filter(student=student)
         
         app_status = self.request.query_params.get('status')
         if app_status:
@@ -194,10 +193,23 @@ class Student_Applications(ListAPIView):
                 openapi.IN_QUERY,
                 description='Filter applications by status',
                 type=openapi.TYPE_STRING,
-                enum=['pending', 'shortlisted', 'rejected', 'selected'],
+                enum=['pending', 'shortlisted', 'rejected', 'selected','accepted','declined'],
             ),
         ]
     )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
+class Student_RetrieveApplicationView(RetrieveAPIView):
+    permission_classes = [IsAuthenticated, IsStudent]
+    serializer_class = ApplicationDetailedSerializer
+    lookup_field = 'app_id'
+    
+    def get_queryset(self):
+        student = self.request.user.student
+        return Application.objects.filter(student=student)
+        
+    @swagger_auto_schema(tags=['Student APIs'], operation_description="API for Get Application", operation_summary="Get Application")
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
     
@@ -277,6 +289,7 @@ class Student_AcceptDeclineOffer(APIView):
             )
             selected_student = SelectedStudentModel.objects.get(application=application)
             selected_student.status = "Joined"
+            selected_student.joining_date = application.application_offer.joining_date
             selected_student.save()
         else:
             Notification.objects.create(
@@ -288,7 +301,9 @@ class Student_AcceptDeclineOffer(APIView):
         ApplicationStatusHistory.objects.create(application=application, old_status=old_status, new_status=app_status)
         
         return Response(
-            {"message": f"Application offer {"accepted" if app_status == "accept" else "declined"} successfully."}, 
+            {
+                "message": f"Application offer {"accepted" if app_status == "accept" else "declined"} successfully."
+            }, 
             status=status.HTTP_200_OK
         )
 
@@ -342,7 +357,7 @@ class StudentGivenReviews(ListAPIView):
 # 3. Student sees reviews received
 class StudentReceivedReviews(ListAPIView):
     permission_classes = [IsAuthenticated, IsStudent]
-    serializer_class = ReviewSerializer
+    serializer_class = Organization_GivenReviewsSerializer
 
     def get_queryset(self):
         return Review.objects.filter(reviewed_student=self.request.user.student)

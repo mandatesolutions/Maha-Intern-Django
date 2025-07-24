@@ -250,7 +250,7 @@ class UpdateAppsStatus(APIView):
         )
         
         if app_status == "selected":
-            SelectedStudentModel.objects.create(application=application)
+            SelectedStudentModel.objects.create(application=application,status="Selected")
             
         return Response({"success": "Application status updated successfully."}, status=status.HTTP_200_OK)        
         

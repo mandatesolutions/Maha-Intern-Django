@@ -147,22 +147,6 @@ class ApplicationStatusHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ApplicationStatusHistory
         exclude = ['application']
-
-
-class ApplicationDetailsSerializer(serializers.ModelSerializer):
-    student = StudentInfoSerializer(read_only=True)
-    internship = InternshipInfoSerializer( read_only=True)
-    interview = InterviewDetailsSerializer(source='application_interview', read_only=True)
-    history = ApplicationStatusHistorySerializer(source='status_history',many=True, read_only=True)
-    offer_details = OfferLetterSerializer(source='application_offer', read_only=True)
-    applied_on = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
-
-    class Meta:
-        model = Application
-        fields = [
-            'app_id', 'student', 'internship', 'status', 'applied_on',
-            'interview', 'offer_details', 'history'
-        ]
         
         
 class EducationSerializer(serializers.ModelSerializer):

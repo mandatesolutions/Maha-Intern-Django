@@ -53,11 +53,14 @@ class LoginSerializer(serializers.Serializer):
     
 
 class StudentReviewSerializer(serializers.ModelSerializer):
-    name = serializers.ReadOnlyField(source='user.name')
+    name = serializers.SerializerMethodField()
     email = serializers.ReadOnlyField(source='user.email')
     class Meta:
         model = Student
         fields = ['stud_id','name','email']
+        
+    def get_name(self, obj):
+        return f"{obj.user.first_name} {obj.user.last_name}"
 
 class OrganizationReviewSerializer(serializers.ModelSerializer):
     class Meta:
@@ -79,10 +82,48 @@ class Organization_GivenReviewsSerializer(serializers.ModelSerializer):
         model = Review
         fields = ['review_id','rating','comment','reviewer_organization','reviewed_student']
         read_only_fields = ['id', 'created_at']
+        
+class AdminAllReviewsSerializer(serializers.ModelSerializer):
+    review_type = serializers.SerializerMethodField()
+    reviewer = serializers.SerializerMethodField()
+    reviewed = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
+
+    class Meta:
+        model = Review
+        fields = [
+            'review_id',
+            'review_type',
+            'rating',
+            'comment',
+            'reviewer',
+            'reviewed',
+            'created_at',
+        ]
+        read_only_fields = ['review_id', 'created_at']
+
+    def get_review_type(self, obj):
+        if obj.reviewer_type == 'student':
+            return 'student_to_organization'
+        elif obj.reviewer_type == 'organization':
+            return 'organization_to_student'
+        return 'unknown'
+
+    def get_reviewer(self, obj):
+        if obj.reviewer_type == 'student' and obj.reviewer_student:
+            return StudentReviewSerializer(obj.reviewer_student).data
+        elif obj.reviewer_type == 'organization' and obj.reviewer_organization:
+            return OrganizationReviewSerializer(obj.reviewer_organization).data
+        return None
+
+    def get_reviewed(self, obj):
+        if obj.reviewer_type == 'student' and obj.reviewed_organization:
+            return OrganizationReviewSerializer(obj.reviewed_organization).data
+        elif obj.reviewer_type == 'organization' and obj.reviewed_student:
+            return StudentReviewSerializer(obj.reviewed_student).data
+        return None
 
 class ReviewSerializer(serializers.ModelSerializer):
-    # reviewer_organization = OrganizationReviewSerializer(read_only=True)
-    # # reviewed_student = StudentReviewSerializer(read_only=True)
 
     class Meta:
         model = Review
@@ -156,6 +197,7 @@ class FeedbackResponseSerializer(serializers.ModelSerializer):
         return feedback
     
 class NotificationSerializer(serializers.ModelSerializer):
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
     class Meta:
         model = Notification
-        fields = '__all__'
+        exclude = ['user']

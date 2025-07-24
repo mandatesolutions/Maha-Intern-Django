@@ -180,6 +180,7 @@ class AdminShowSelectedApplications(serializers.ModelSerializer):
     student_email = serializers.CharField(source='student.user.email', read_only=True)
     internship_title = serializers.CharField(source='internship.title', read_only=True)
     orgnization_name=serializers.CharField(source='internship.company.company_name')
+    applied_on = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
     student_name = serializers.SerializerMethodField()
     is_joined = serializers.SerializerMethodField()
     class Meta:
@@ -240,12 +241,12 @@ class AdminSelectedStudentSerializer(serializers.ModelSerializer):
 class InterviewDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = InterviewDetails
-        exclude = ['application']
+        exclude = ['application','id']
         ref_name = 'interview_details_serializer'
 class OfferDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = OfferDetails
-        exclude = ['application']
+        exclude = ['application','id']
         
 class ApplicationDetailedSerializer(serializers.ModelSerializer):
     student = serializers.SerializerMethodField(read_only=True)

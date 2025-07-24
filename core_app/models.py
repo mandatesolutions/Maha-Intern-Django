@@ -57,6 +57,7 @@ class Notification(models.Model):
 
     class Meta:
         db_table = 'Notification'
+        ordering = ['-created_at']
         
 class Review(models.Model):
     REVIEW_FROM_CHOICES = [

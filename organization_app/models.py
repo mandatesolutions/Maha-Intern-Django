@@ -178,7 +178,7 @@ class SelectedStudentModel(models.Model):
     selected_student_id = models.CharField(max_length=100, unique=True, editable=False, null=True)    
     application = models.OneToOneField('organization_app.Application', on_delete=models.CASCADE, related_name='selected_student')
     joining_date = models.DateField(null=True,blank=True)
-    status = models.CharField(max_length=20, choices=[('Joined', 'Joined'), ('Completed', 'Completed')], default='Joined')
+    status = models.CharField(max_length=20, choices=[('Selected', 'Selected'),('Joined', 'Joined'), ('Completed', 'Completed')], default='Selected')
 
     class Meta:
         app_label = 'organization_app'

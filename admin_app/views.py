@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import Http404
 from django.db.models import Count, Q, Avg
 from django.utils.timezone import now
+from django.http import HttpResponse
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -25,6 +26,10 @@ from core_app.views import CustomSearchFilter, CustomPaginator
 from organization_app.models import *
 from organization_app.serializers import *
 
+from student_app.serializers import MonthlyReviewStudentToOrganizationSerializer
+
+import os
+import mimetypes
 
 # Create your views here.
 class IsAdmin(BasePermission):
@@ -159,6 +164,28 @@ class Admin_StudentResumesListView(ListAPIView):
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
     
+class Admin_DownloadStudentResume(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    
+    @swagger_auto_schema(tags=['Admin APIs'],operation_description="API to Download Student Resume", operation_summary="Download Student Resume")
+    def get(self, request, stud_id):
+        student = get_object_or_404(Student, stud_id=stud_id)
+        resume_file = student.resume
+        if not resume_file or not os.path.isfile(resume_file.path):
+            return Response({"detail": "Resume File Not Found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        file_path = resume_file.path
+        file_name = resume_file.name
+
+        # Guess the content type
+        content_type, _ = mimetypes.guess_type(file_path)
+        content_type = content_type or 'application/octet-stream'
+
+        # Read and return the file
+        with open(file_path, 'rb') as f:
+            response = HttpResponse(f.read(), content_type=content_type)
+            response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_name)}"'
+            return response
 class Admin_ForwardStudentProfileToOrganization(APIView):
     permission_classes = [IsAuthenticated,IsAdmin]
     serializer_class = ForwardStudentProfileSerializer
@@ -348,8 +375,8 @@ class Admin_ApproveBlockInternship(APIView):
         internship.save()
         return Response({'details':f'{internship.title} is {'approved' if intern_status == 'approve' else 'rejected'}'} ,status=status.HTTP_200_OK)
     
+    
 # Internship Applications
-
 class Admin_ApplicationsListView(ListAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]
     serializer_class = ApplicationDetailedSerializer
@@ -410,6 +437,78 @@ class Admin_RetrieveApplication(RetrieveAPIView):
     def get(self, request, app_id):
         return super().get(request, app_id)
     
+class Admin_InterviewDetailsView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = InterviewDetailsSerializer
+    
+    def get_queryset(self):
+        app_id = self.kwargs['app_id']
+        return get_object_or_404(InterviewDetails, application__app_id=app_id)
+    
+    @swagger_auto_schema(
+        tags=['Admin APIs'],
+        operation_description='Get a specific Interview by ID',
+        operation_summary='Get a specific Interview by ID'
+    )
+    def get(self, request, app_id):
+        interview = self.get_queryset()
+        serializer = self.serializer_class(interview)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @swagger_auto_schema(
+        tags=['Admin APIs'],
+        operation_description='create Interview details',
+        operation_summary='create Interview details',
+        request_body=serializer_class
+    )
+    def post(self, request, app_id):
+        application = get_object_or_404(Application, app_id=app_id)
+        
+        if application.status != 'shortlisted':
+            return Response({"detail": "Application is not shortlisted."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if InterviewDetails.objects.filter(application=application).exists():
+            return Response({"detail": "Interview details already exist for this application."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save(application=application)
+            Notification.objects.create(
+                title="Interview Scheduled",
+                message=f"Your interview has been scheduled for {application.internship.title}.",
+                user=application.student.user
+            )
+            Notification.objects.create(
+                title="Interview Scheduled",
+                message=f"Interview has been scheduled for {application.internship.title} by Admin.",
+                user=application.internship.company.user
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @swagger_auto_schema(
+        tags=['Admin APIs'],
+        operation_description='update Interview details',
+        operation_summary='update Interview details',
+        request_body=serializer_class
+    )
+    def put(self, request, app_id):
+        interview = self.get_queryset()
+        serializer = self.serializer_class(interview, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            Notification.objects.create(
+                title="Interview Details Updated",
+                message=f"Your interview details have been updated for {interview.application.internship.title}.",
+                user=interview.application.student.user
+            )
+            Notification.objects.create(
+                title="Interview Details Updated",
+                message=f"Interview details have been updated for {interview.application.internship.title} by Admin.",
+                user=interview.application.internship.company.user
+            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 class AppsByIntern(APIView):
     serializer_classes = ShowInternApplicationSerializer
     permission_classes=[IsAuthenticated,IsAdmin]
@@ -454,23 +553,220 @@ class LatestStudent(APIView):
 
         return Response(student_data,status=status.HTTP_200_OK)
 
+
+# Reports, Reviews, Feedbacks APIs
+class Admin_ListMonthlyReportofStudent(ListAPIView):
+    serializer_class = MonthlyReviewOrganizationToStudentSerializer
+    permission_classes=[IsAuthenticated, IsAdmin]
+
+    def get_queryset(self):
+        monthly_reviews = MonthlyReviewOrganizationToStudent.objects.all()
+        
+        year = self.request.query_params.get('year')
+        month = self.request.query_params.get('month')
+        stud_id = self.request.query_params.get('stud_id')
+        org_id = self.request.query_params.get('org_id')
+        
+        if year:
+            monthly_reviews = monthly_reviews.filter(year=year)
+        if month:
+            monthly_reviews = monthly_reviews.filter(month=month)
+        if stud_id:
+            monthly_reviews = monthly_reviews.filter(student__stud_id=stud_id)
+        if org_id:
+            monthly_reviews = monthly_reviews.filter(organization__org_id=org_id)
+            
+        return monthly_reviews
+
+    @swagger_auto_schema(
+        tags=['Admin APIs'],
+        operation_description='Get Monthly report of students or by student id',
+        operation_summary='Get Monthly report of students or by student id',
+        manual_parameters=[
+            openapi.Parameter(
+                "stud_id", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by reported student ID",
+            ),
+            openapi.Parameter(
+                "org_id", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by reporter organization ID",
+            ),
+            openapi.Parameter(
+                "year", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by year",
+            ),
+            openapi.Parameter(
+                "month", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by month",
+            ),
+        ]
+    )
+    def get(self,request,*args,**kwargs):
+        return super().get(request,*args,**kwargs)
     
-class GetStudentReport(APIView):
-    serializer_classes = MonthlyReviewOrganizationToStudentSerializer
-    permission_classes=[IsAuthenticated]
+class Admin_ListMonthlyReportofOrganization(ListAPIView):
+    serializer_class = MonthlyReviewStudentToOrganizationSerializer
+    permission_classes=[IsAuthenticated, IsAdmin]
 
-    @swagger_auto_schema(tags=['Admin APIs'],operation_description='show organization info for application',operation_summary='show organization info for application')
-    def get(self,request,student_id):
-        try:
-            report_data = MonthlyReviewOrganizationToStudent.objects.filter(application__student__id = student_id)
-        except MonthlyReviewOrganizationToStudent.DoesNotExist:
-            return Response({'error':'student id not found'})
-       
-        serializer = self.serializer_classes(report_data,many=True)
-        return Response(serializer.data,status=status.HTTP_200_OK)
+    def get_queryset(self):
+        monthly_reviews = MonthlyReviewStudentToOrganization.objects.all()
+        
+        year = self.request.query_params.get('year')
+        month = self.request.query_params.get('month')
+        stud_id = self.request.query_params.get('stud_id')
+        org_id = self.request.query_params.get('org_id')
+        
+        if year:
+            monthly_reviews = monthly_reviews.filter(year=year)
+        if month:
+            monthly_reviews = monthly_reviews.filter(month=month)
+        if stud_id:
+            monthly_reviews = monthly_reviews.filter(student__stud_id=stud_id)
+        if org_id:
+            monthly_reviews = monthly_reviews.filter(organization__org_id=org_id)
+            
+        return monthly_reviews
     
+    @swagger_auto_schema(
+        tags=['Admin APIs'],
+        operation_description='Get Monthly report of organizations or by organization id',
+        operation_summary='Get Monthly report of organizations or by organization id',
+        manual_parameters=[
+            openapi.Parameter(
+                "org_id", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by reported organization ID",
+            ),
+            openapi.Parameter(
+                "stud_id", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by reporter student ID",
+            ),
+            openapi.Parameter(
+                "year", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by year",
+            ),
+            openapi.Parameter(
+                "month", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by month",
+            ),
+        ]
+    )
+    def get(self,request,*args,**kwargs):
+        return super().get(request,*args,**kwargs)
+    
+class Admin_ReviewsListView(ListAPIView):
+    serializer_class = AdminAllReviewsSerializer
+    permission_classes=[IsAuthenticated, IsAdmin]
+    queryset = Review.objects.all()
+    pagination_class = CustomPaginator
 
+    @swagger_auto_schema(
+        tags=['Admin APIs'],
+        operation_description='Get all the Reviews or by student or organization',
+        operation_summary='Get all the Reviews or by student or organization',
+    )
+    def get(self,request,*args,**kwargs):
+        return super().get(request,*args,**kwargs)
+    
+class Admin_FeedbacksOfStudent(ListAPIView):
+    serializer_class = FeedbackResponseSerializer
+    permission_classes=[IsAuthenticated, IsAdmin]
+    pagination_class = CustomPaginator
+    
+    def get_queryset(self):
+        feedback_responses = FeedbackResponse.objects.filter(feedback_type='organisation_to_student')
+        
+        stud_id = self.request.query_params.get('stud_id')
+        org_id = self.request.query_params.get('org_id')
+        year = self.request.query_params.get('year')
+        month = self.request.query_params.get('month')
+        
+        if year:
+            feedback_responses = feedback_responses.filter(year=year)
+        if month:
+            feedback_responses = feedback_responses.filter(month=month)
+        if stud_id:
+            feedback_responses = feedback_responses.filter(recipient_student__stud_id=stud_id)
+        if org_id:
+            feedback_responses = feedback_responses.filter(sender_organization__org_id=org_id)
+        
+        return feedback_responses
+        
 
+    @swagger_auto_schema(
+        tags=['Admin APIs'],
+        operation_description='Get all the Feedbacks of students or by student id',
+        operation_summary='Get all the Feedbacks of students or by student id',
+        manual_parameters=[
+            openapi.Parameter(
+                "stud_id", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by recipient student ID",
+            ),
+            openapi.Parameter(
+                "org_id", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by sender organization ID",
+            ),
+            openapi.Parameter(
+                "year", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by year",
+            ),
+            openapi.Parameter(
+                "month", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by month",
+            ),
+        ]
+    )
+    def get(self,request,*args,**kwargs):
+        return super().get(request,*args,**kwargs)
+
+class Admin_FeedbacksOfOrganization(ListAPIView):
+    serializer_class = FeedbackResponseSerializer
+    permission_classes=[IsAuthenticated, IsAdmin]
+    pagination_class = CustomPaginator
+    
+    def get_queryset(self):
+        feedback_responses = FeedbackResponse.objects.filter(feedback_type='student_to_organisation')
+        
+        stud_id = self.request.query_params.get('stud_id')
+        org_id = self.request.query_params.get('org_id')
+        year = self.request.query_params.get('year')
+        month = self.request.query_params.get('month')
+        
+        if year:
+            feedback_responses = feedback_responses.filter(year=year)
+        if month:
+            feedback_responses = feedback_responses.filter(month=month)
+        if stud_id:
+            feedback_responses = feedback_responses.filter(sender_student__stud_id=stud_id)
+        if org_id:
+            feedback_responses = feedback_responses.filter(recipient_organization__org_id=org_id)
+        
+        return feedback_responses
+    
+    @swagger_auto_schema(
+        tags=['Admin APIs'],
+        operation_description='Get all the Feedbacks of organizations or by organization id',
+        operation_summary='Get all the Feedbacks of organizations or by organization id',
+        manual_parameters=[
+            openapi.Parameter(
+                "stud_id", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by sender student ID",
+            ),
+            openapi.Parameter(
+                "org_id", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by recipient organization ID",
+            ),
+            openapi.Parameter(
+                "year", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by year",
+            ),
+            openapi.Parameter(
+                "month", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Filter by month",
+            ),
+        ]
+    )
+    def get(self,request,*args,**kwargs):
+        return super().get(request,*args,**kwargs)
 
 class GetJoinedStudents(APIView):
     permission_classes=[IsAuthenticated]
@@ -565,16 +861,3 @@ class Admin_FeedbackQuestionsView(APIView):
 
         return Response(response, status=status.HTTP_201_CREATED)
 
-
-    
-
-    
-
-
-
-
-
-
-
-
-        

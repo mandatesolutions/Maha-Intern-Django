@@ -12,7 +12,10 @@ urlpatterns = [
     path('internshipdetails/<str:uid>', views.Student_InternshipDetail.as_view(), name='internshipdetails'),
     
     path('internship-apply/<str:intern_id>', views.Student_Internshipapply.as_view(), name='internship-apply'),
-    path('applications/', views.Student_Applications.as_view(), name='user-applications'),
+    path('applications/', views.Student_ListApplications.as_view(), name='user-applications'),
+    path('application/<str:app_id>', views.Student_RetrieveApplicationView.as_view(), name='application'),
+    path('application/<str:app_id>/status/<str:app_status>', views.Student_AcceptDeclineOffer.as_view(), name='accept-decline-application'),
+    
     
     path('monthreports/', views.ListMonthlyReview.as_view(), name='monthreport'),
     path('monthreports/<str:org_id>', views.CreateMonthlyReview.as_view(), name='add-monthreport'),
