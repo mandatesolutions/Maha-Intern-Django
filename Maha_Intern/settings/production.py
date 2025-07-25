@@ -21,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-adu4#r&(!h*$j4b(y$!3b2te8pcd5+h+1w7i$84xa4=hu4x$#k'
+SECRET_KEY = '!%dp=&t1^_!9#&m+9&w#e*0mvyp*q2$cte*m9=uhfl$3cj*&9o'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -32,6 +32,7 @@ ALLOWED_HOSTS = ['backend.internship.mahasocial.com', 'www.backend.internship.ma
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -109,8 +110,27 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'Maha_Intern.wsgi.application'
+# WSGI_APPLICATION = 'Maha_Intern.wsgi.application'
+ASGI_APPLICATION = 'Maha_Intern.asgi.application'
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        },
+    },
+}
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases

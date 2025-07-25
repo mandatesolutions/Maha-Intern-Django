@@ -1,0 +1,31 @@
+name: Django Deployment Workflow
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Deploy over SSH
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        script: |
+          cd /var/www/backend.internship.mahasocial.com
+          git pull origin main
+          source IS_env/bin/activate
+          pip install -r requirements.txt
+          python manage.py makemigrations core_app admin_app student_app organization_app
+          python manage.py migrate
+          python manage.py collectstatic --noinput
+          sudo systemctl restart internship.service
+          sudo systemctl reload nginx.service
