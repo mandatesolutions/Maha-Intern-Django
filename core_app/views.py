@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
 from rest_framework import status,permissions
@@ -8,12 +9,14 @@ from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.generics import *
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from .serializers import *
 from .models import *
+from .utils import get_room_name
 
 import math
 
@@ -143,5 +146,60 @@ class GetAllNotifications(APIView):
     def get(self, request):
         notifications = Notification.objects.filter(user=request.user)
         serializer = self.serializer_class(notifications, many=True)
-        return Response(serializer.data)
+        return Response(
+            {
+                'notifications': serializer.data,
+                'unread_count': notifications.filter(is_read=False).count()   
+            }, 
+            status=status.HTTP_200_OK
+        )
+        
+class MarkNotificationAsRead(APIView):
+    permission_classes = [IsAuthenticated]
     
+    @swagger_auto_schema(
+        tags=['Core APIs'], 
+        operation_description='Mark Notification As Read',
+        operation_summary='Mark Notification As Read',
+        manual_parameters=[
+            openapi.Parameter(
+                'notification_id',
+                openapi.IN_PATH,
+                description='Notification ID',
+                type=openapi.TYPE_INTEGER
+            )
+        ]
+    )
+    def patch(self, request, notification_id):
+        notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+        notification.is_read = True
+        notification.save()
+        return Response({'detail': 'Notification marked as read.'}, status=status.HTTP_200_OK)
+    
+class Get_ChatHistory(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ChatMessageSerializer
+    
+    def get_queryset(self):
+        sender_id = self.request.user.id
+        receiver_id = self.kwargs['receiver_id']
+        room_name = get_room_name(sender_id, receiver_id)
+        messages = ChatMessage.objects.filter(room_name=room_name)
+        return messages
+    
+
+    @swagger_auto_schema(
+        tags=['Core APIs'], 
+        operation_description="Get Chat History",
+        operation_summary="Get Chat History",
+        manual_parameters=[
+            openapi.Parameter(
+                'receiver_id',
+                openapi.IN_PATH,
+                description='Receiver ID',
+                type=openapi.TYPE_INTEGER
+            )
+        ]
+    )
+    def get(self, request, receiver_id):
+        return super().get(request, receiver_id)

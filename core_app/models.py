@@ -214,3 +214,14 @@ class FeedbackAnswer(models.Model):
 
     class Meta:
         db_table = 'FeedbackAnswer'
+
+class ChatMessage(models.Model):
+    sender = models.ForeignKey(UserModel, on_delete=models.CASCADE, related_name='sent')
+    receiver = models.ForeignKey(UserModel, on_delete=models.CASCADE, related_name='received')
+    room_name = models.CharField(max_length=255)
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'Message'
+        ordering = ['-timestamp']

@@ -201,3 +201,32 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         exclude = ['user']
+        
+class ChatMessageSerializer(serializers.ModelSerializer):
+    sender = serializers.SerializerMethodField()
+    receiver = serializers.SerializerMethodField()
+    timestamp = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
+    class Meta:
+        model = ChatMessage
+        fields = '__all__'
+        read_only_fields = ['id']
+    
+    def get_sender(self, obj):
+        response = {
+            'name': f'{obj.sender.first_name} {obj.sender.last_name}',
+        }
+        if obj.sender.role == 'Student':
+            response['stud_id'] = obj.sender.student.stud_id
+        elif obj.sender.role == 'Organization':
+            response['org_id'] = obj.sender.organization.org_id
+        return response
+
+    def get_receiver(self, obj):
+        response = {
+            'name': f'{obj.receiver.first_name} {obj.receiver.last_name}',
+        }
+        if obj.receiver.role == 'Student':
+            response['stud_id'] = obj.receiver.student.stud_id
+        elif obj.receiver.role == 'Organization':
+            response['org_id'] = obj.receiver.organization.org_id
+        return response
