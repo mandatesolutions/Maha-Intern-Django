@@ -22,7 +22,7 @@ jobs:
         script: |
           cd /var/www/backend.internship.mahasocial.com
           git pull origin main
-          source IS_env/bin/activate
+          source .venv/bin/activate
           pip install -r requirements.txt
           python manage.py makemigrations core_app admin_app student_app organization_app
           python manage.py migrate
