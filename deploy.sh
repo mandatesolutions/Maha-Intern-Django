@@ -15,7 +15,7 @@ echo "✅ Migrations and cache cleaned."
 
 echo "📦 Running makemigrations and migrate..."
 python manage.py makemigrations
-python manage.py migrate --fake-initial
+python manage.py migrate
 
 echo "📁 (Optional) Collecting static files..."
 python manage.py collectstatic --noinput
